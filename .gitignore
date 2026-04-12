@@ -1,0 +1,13 @@
+node_modules/
+.env
+.env.local
+dist/
+build/
+.expo/
+.next/
+coverage/
+*.log
+.DS_Store
+dev.db-journal
+dev.db 
+.db
