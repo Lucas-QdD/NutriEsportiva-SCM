@@ -1,0 +1,103 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+enum UserRole {
+  ATHLETE
+  COACH
+  NUTRITIONIST
+}
+
+enum HydrationStatus {
+  GOOD
+  MODERATE
+  POOR
+}
+
+model User {
+  id             String          @id @default(cuid())
+  name           String
+  email          String          @unique
+  password       String
+  role           UserRole
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  teamId         String?
+  team           Team?           @relation(fields: [teamId], references: [id])
+
+  athleteProfile AthleteProfile?
+}
+
+model Team {
+  id        String           @id @default(cuid())
+  name      String
+  code      String           @unique
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  users     User[]
+  athletes  AthleteProfile[]
+}
+
+model AthleteProfile {
+  id          String            @id @default(cuid())
+  userId      String            @unique
+  teamId      String
+  athleteCode String            @unique
+  age         Int
+  sport       String?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  user        User              @relation(fields: [userId], references: [id])
+  team        Team              @relation(fields: [teamId], references: [id])
+  sessions    TrainingSession[]
+}
+
+model TrainingSession {
+  id                String           @id @default(cuid())
+  athleteId         String
+  sessionDate       DateTime
+  durationMin       Int
+  measurementMethod String
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  athlete           AthleteProfile   @relation(fields: [athleteId], references: [id])
+  record            HydrationRecord?
+  result            HydrationResult?
+}
+
+model HydrationRecord {
+  id                String           @id @default(cuid())
+  sessionId         String           @unique
+  preWeightKg       Float
+  postWeightKg      Float
+  fluidIntakeLiters Float            @default(0)
+  urineVolumeLiters Float?
+  temperatureC      Float?
+  humidityPercent   Float?
+  symptoms          String?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  session           TrainingSession  @relation(fields: [sessionId], references: [id])
+}
+
+model HydrationResult {
+  id                  String           @id @default(cuid())
+  sessionId           String           @unique
+  sweatRateLitersHour Float
+  hydrationStatus     HydrationStatus
+  recommendation      String
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+
+  session             TrainingSession  @relation(fields: [sessionId], references: [id])
+}
