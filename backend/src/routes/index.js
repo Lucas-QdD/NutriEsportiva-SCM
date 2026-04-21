@@ -6,6 +6,8 @@ const { listTeams,
     deleteTeam,
 } = require("../controllers/teamController");
 
+const { createUser 
+} = require("../controllers/userController");
 
 const router = Router();
 
@@ -20,5 +22,6 @@ router.post("/teams", createTeam);
 router.get("/teams/:id", getTeamById);
 router.put("/teams/:id", updateTeam);
 router.delete("/teams/:id", deleteTeam);
+router.post("/users", createUser);
 
 module.exports = router;
