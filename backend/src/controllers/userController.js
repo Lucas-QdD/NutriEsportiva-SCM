@@ -91,8 +91,51 @@ async function listUsers(req, res) {
   }
 }
 
+// busca um usuário específico pelo id
+async function getUserById(req, res) {
+  try {
+    // id vem da rota (/users/:id)
+    const { id } = req.params;
+
+    // busca o usuário no banco pelo id
+    const user = await prisma.user.findUnique({
+      where: {
+        id,
+      },
+
+      // selecionamos apenas os campos seguros 
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        teamId: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    // se não encontrar, retorna erro 404
+    if (!user) {
+      return res.status(404).json({
+        error: "Usuário não encontrado",
+      });
+    }
+
+    // retorna o usuário encontrado
+    return res.status(200).json(user);
+  } catch (error) {
+    console.error("Erro ao buscar usuário:", error);
+
+    return res.status(500).json({
+      error: error.message,
+    });
+  }
+}
+
 
 module.exports = {
   createUser,
   listUsers,
+  getUserById,
 };

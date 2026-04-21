@@ -8,6 +8,7 @@ const { listTeams,
 
 const { createUser, 
     listUsers,
+    getUserById,
 } = require("../controllers/userController");
 
 const router = Router();
@@ -28,5 +29,6 @@ router.delete("/teams/:id", deleteTeam);
 // Rotas para usuários
 router.post("/users", createUser);
 router.get("/users", listUsers);
+router.get("/users/:id", getUserById);
 
 module.exports = router;
