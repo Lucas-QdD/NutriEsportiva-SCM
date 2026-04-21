@@ -9,6 +9,7 @@ const { listTeams,
 const { createUser, 
     listUsers,
     getUserById,
+    updateUser,
 } = require("../controllers/userController");
 
 const router = Router();
@@ -30,5 +31,6 @@ router.delete("/teams/:id", deleteTeam);
 router.post("/users", createUser);
 router.get("/users", listUsers);
 router.get("/users/:id", getUserById);
+router.put("/users/:id", updateUser);
 
 module.exports = router;
