@@ -57,7 +57,34 @@ async function createTeam(req, res) {
   }
 }
 
+async function getTeamById(req, res) {
+  try {
+    const { id } = req.params;
+
+    const team = await prisma.team.findUnique({
+      where: {
+        id,
+      },
+    });
+
+    if (!team) {
+      return res.status(404).json({
+        error: "Equipe não encontrada",
+      });
+    }
+
+    return res.status(200).json(team);
+  } catch (error) {
+    console.error("Erro ao buscar equipe:", error);
+
+    return res.status(500).json({
+      error: error.message,
+    });
+  }
+}
+
 module.exports = {
   listTeams,
   createTeam,
+  getTeamById,
 };
