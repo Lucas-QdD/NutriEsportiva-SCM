@@ -228,9 +228,44 @@ async function updateUser(req, res) {
   }
 }
 
+// remove um usuário existente
+async function deleteUser(req, res) {
+  try {
+    // id vem da rota (/users/:id)
+    const { id } = req.params;
+
+    // verifica se o usuário existe antes de deletar
+    const user = await prisma.user.findUnique({
+      where: { id },
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        error: "Usuário não encontrado",
+      });
+    }
+
+    // remove o usuário do banco
+    await prisma.user.delete({
+      where: { id },
+    });
+
+    return res.status(200).json({
+      message: "Usuário removido com sucesso",
+    });
+  } catch (error) {
+    console.error("Erro ao remover usuário:", error);
+
+    return res.status(500).json({
+      error: error.message,
+    });
+  }
+}
+
 module.exports = {
   createUser,
   listUsers,
   getUserById,
   updateUser,
+  deleteUser,
 };
