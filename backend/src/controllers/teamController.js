@@ -141,9 +141,44 @@ async function updateTeam(req, res) {
   }
 }
 
+async function deleteTeam(req, res) {
+  try {
+    const { id } = req.params;
+
+    const team = await prisma.team.findUnique({
+      where: {
+        id,
+      },
+    });
+
+    if (!team) {
+      return res.status(404).json({
+        error: "Equipe não encontrada",
+      });
+    }
+
+    await prisma.team.delete({
+      where: {
+        id,
+      },
+    });
+
+    return res.status(200).json({
+      message: "Equipe removida com sucesso",
+    });
+  } catch (error) {
+    console.error("Erro ao remover equipe:", error);
+
+    return res.status(500).json({
+      error: error.message,
+    });
+  }
+}
+
 module.exports = {
   listTeams,
   createTeam,
   getTeamById,
   updateTeam,
+  deleteTeam,
 };
