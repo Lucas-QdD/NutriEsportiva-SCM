@@ -6,7 +6,8 @@ const { listTeams,
     deleteTeam,
 } = require("../controllers/teamController");
 
-const { createUser 
+const { createUser, 
+    listUsers,
 } = require("../controllers/userController");
 
 const router = Router();
@@ -17,11 +18,15 @@ router.get("/", (req, res) => {
   });
 });
 
+// Rotas para equipes
 router.get("/teams", listTeams);
 router.post("/teams", createTeam);
 router.get("/teams/:id", getTeamById);
 router.put("/teams/:id", updateTeam);
 router.delete("/teams/:id", deleteTeam);
+
+// Rotas para usuários
 router.post("/users", createUser);
+router.get("/users", listUsers);
 
 module.exports = router;
