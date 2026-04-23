@@ -33,7 +33,7 @@ function authMiddleware(req, res, next) {
     }
 
     // valida e decodifica o token
-    const decoded = jwt.verify(token, "segredo-super-seguro");
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
     // salva os dados do usuário na requisição para uso futuro
     req.user = decoded;

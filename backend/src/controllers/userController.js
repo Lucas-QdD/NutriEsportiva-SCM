@@ -305,7 +305,7 @@ async function loginUser(req, res) {
         email: user.email,
         role: user.role,
       },
-      "segredo-super-seguro", // depois vamos mover para .env
+      process.env.JWT_SECRET, 
       {
         expiresIn: "1d",
       }
