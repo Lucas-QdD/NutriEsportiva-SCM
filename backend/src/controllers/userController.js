@@ -1,4 +1,5 @@
 const prisma = require("../lib/prisma");
+const bcrypt = require("bcrypt");
 
 const validRoles = ["ATHLETE", "COACH", "NUTRITIONIST"];
 
@@ -6,21 +7,20 @@ async function createUser(req, res) {
   try {
     const { name, email, password, role, teamId } = req.body;
 
-    // validação básica
     if (!name || !email || !password || !role) {
       return res.status(400).json({
         error: "name, email, password e role são obrigatórios",
       });
     }
 
-    // validar role
+    const validRoles = ["ATHLETE", "COACH", "NUTRITIONIST"];
+
     if (!validRoles.includes(role)) {
       return res.status(400).json({
         error: "role inválida",
       });
     }
 
-    // verificar email duplicado
     const existingUser = await prisma.user.findUnique({
       where: { email },
     });
@@ -31,7 +31,6 @@ async function createUser(req, res) {
       });
     }
 
-    // opcional: validar teamId
     if (teamId) {
       const team = await prisma.team.findUnique({
         where: { id: teamId },
@@ -44,11 +43,15 @@ async function createUser(req, res) {
       }
     }
 
+    // criptografa a senha antes de salvar no banco
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
+
     const user = await prisma.user.create({
       data: {
         name,
         email,
-        password,
+        password: hashedPassword,
         role,
         teamId: teamId || null,
       },
