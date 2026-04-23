@@ -1,5 +1,6 @@
 const prisma = require("../lib/prisma");
 const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
 
 const validRoles = ["ATHLETE", "COACH", "NUTRITIONIST"];
 
@@ -265,10 +266,76 @@ async function deleteUser(req, res) {
   }
 }
 
+// realiza login do usuário
+async function loginUser(req, res) {
+  try {
+    const { email, password } = req.body;
+
+    // validação básica
+    if (!email || !password) {
+      return res.status(400).json({
+        error: "email e password são obrigatórios",
+      });
+    }
+
+    // busca usuário pelo email
+    const user = await prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        error: "Usuário não encontrado",
+      });
+    }
+
+    // compara senha informada com senha criptografada
+    const passwordMatch = await bcrypt.compare(password, user.password);
+
+    if (!passwordMatch) {
+      return res.status(401).json({
+        error: "Senha incorreta",
+      });
+    }
+
+    // gera token JWT
+    const token = jwt.sign(
+      {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+      },
+      "segredo-super-seguro", // depois vamos mover para .env
+      {
+        expiresIn: "1d",
+      }
+    );
+
+    // retorna usuário (sem senha) + token
+    return res.status(200).json({
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        teamId: user.teamId,
+      },
+      token,
+    });
+  } catch (error) {
+    console.error("Erro no login:", error);
+
+    return res.status(500).json({
+      error: error.message,
+    });
+  }
+}
+
 module.exports = {
   createUser,
   listUsers,
   getUserById,
   updateUser,
   deleteUser,
+  loginUser,
 };
