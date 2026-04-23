@@ -1,4 +1,5 @@
 const { Router } = require("express");
+
 const { listTeams, 
     createTeam, 
     getTeamById, 
@@ -14,6 +15,8 @@ const { createUser,
     loginUser,
 } = require("../controllers/userController");
 
+const authMiddleware = require("../middlewares/authMiddleware");
+
 const router = Router();
 
 router.get("/", (req, res) => {
@@ -22,19 +25,29 @@ router.get("/", (req, res) => {
   });
 });
 
-// Rotas para equipes
-router.get("/teams", listTeams);
-router.post("/teams", createTeam);
-router.get("/teams/:id", getTeamById);
-router.put("/teams/:id", updateTeam);
-router.delete("/teams/:id", deleteTeam);
+router.get("/", (req, res) => {
+  return res.json({
+    message: "SweatApp API funcionando",
+  });
+});
 
-// Rotas para usuários
-router.post("/users", createUser);
-router.get("/users", listUsers);
-router.get("/users/:id", getUserById);
-router.put("/users/:id", updateUser);
-router.delete('/users/:id', deleteUser);
+// rota pública de login
 router.post("/login", loginUser);
+
+// rotas públicas de cadastro (por enquanto)
+router.post("/users", createUser);
+
+// rotas protegidas de users
+router.get("/users", authMiddleware, listUsers);
+router.get("/users/:id", authMiddleware, getUserById);
+router.put("/users/:id", authMiddleware, updateUser);
+router.delete("/users/:id", authMiddleware, deleteUser);
+
+// rotas protegidas de teams
+router.get("/teams", authMiddleware, listTeams);
+router.get("/teams/:id", authMiddleware, getTeamById);
+router.post("/teams", authMiddleware, createTeam);
+router.put("/teams/:id", authMiddleware, updateTeam);
+router.delete("/teams/:id", authMiddleware, deleteTeam);
 
 module.exports = router;
