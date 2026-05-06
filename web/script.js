@@ -97,17 +97,37 @@ const appState = {
         }
     },
 
-    login(username, password, userType) {
-        // Simple mock authentication
-        if (username && password && userType) {
-            this.currentUser = {
-                username,
-                name: userType === 'athlete' ? username : 'Rafael',
-                email: userType === 'athlete' ? `${username}@athlete.com` : 'rafael@saocamilo.com.br'
-            };
+    async login(email, password, userType) {
+        try {
+            const response = await fetch("http://localhost:3333/login", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    email,
+                    password,
+                }),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                alert(data.error || "Erro ao realizar login");
+                return;
+            }
+
+            localStorage.setItem("token", data.token);
+            localStorage.setItem("user", JSON.stringify(data.user));
+
+            this.currentUser = data.user;
             this.userType = userType;
-            this.currentPage = 'dashboard';
+            this.currentPage = "dashboard";
+
             render();
+        } catch (error) {
+            console.error("Erro ao conectar com a API:", error);
+            alert("Não foi possível conectar ao servidor.");
         }
     }
 };
@@ -138,10 +158,10 @@ function setupLoginHandlers() {
     const form = document.getElementById('login-form');
     form.addEventListener('submit', (e) => {
         e.preventDefault();
-        const username = document.getElementById('username').value;
+        const email = document.getElementById('username').value;
         const password = document.getElementById('password').value;
         const userType = document.getElementById('user-type').value;
-        appState.login(username, password, userType);
+        appState.login(email, password, userType);
     });
 }
 
