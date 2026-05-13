@@ -1,3 +1,5 @@
+const { arredondar } = require("./math");
+
 function calcularPerdaHidrica (
     pesoInicial,
     pesoFinal,
@@ -20,7 +22,7 @@ function calcularTaxaSudorese (
         );
     }
 
-    return (
+    return arredondar(
         perdaHidrica / tempoExercicioHoras
     );
 }
@@ -29,7 +31,7 @@ function calcularPercentualDesidratacao (
     perdaHidrica,
     pesoInicial
 ) {
-    return (
+    return arredondar(
         (perdaHidrica / pesoInicial) * 100
     );
 }
@@ -38,7 +40,7 @@ function calcularReposicaoPosTreino (
     pesoInicial,
     pesoFinal
 ) {
-    return (
+    return arredondar(
         (pesoInicial - pesoFinal) * 1.5
     );
 }
