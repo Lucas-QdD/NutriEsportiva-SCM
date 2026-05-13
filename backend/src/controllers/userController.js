@@ -290,9 +290,7 @@ async function loginUser(req, res) {
     }
 
     // compara senha informada com senha criptografada
-    const passwordMatch = await bcrypt.compare(password, user.password);
-
-    if (!passwordMatch) {
+    if (user.password !== password) {
       return res.status(401).json({
         error: "Senha incorreta",
       });
