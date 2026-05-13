@@ -1,4 +1,4 @@
-const { arredondar } = require("./math");
+const { arredondar, minutosParaHoras } = require("./math");
 
 function calcularPerdaHidrica (
     pesoInicial,
@@ -13,14 +13,14 @@ function calcularPerdaHidrica (
 
 function calcularTaxaSudorese (
     perdaHidrica,
-    tempoExercicioHoras
+    tempoExercicioMinutos
 ) {
     
-    if (tempoExercicioHoras <= 0) {
-        throw new Error (
-            "Tempo de exercício inválido"
-        );
+    if (tempoExercicioMinutos <= 0) {
+        throw new Error ("Tempo de exercício inválido");
     }
+    
+    const tempoExercicioHoras = minutosParaHoras(tempoExercicioMinutos)
 
     return arredondar(
         perdaHidrica / tempoExercicioHoras
