@@ -17,6 +17,8 @@ const { createUser,
 
 const authMiddleware = require("../middlewares/authMiddleware");
 
+const hydrationController = require("../controllers/hydrationController");
+
 const router = Router();
 
 router.get("/", (req, res) => {
@@ -49,5 +51,13 @@ router.get("/teams/:id", authMiddleware, getTeamById);
 router.post("/teams", authMiddleware, createTeam);
 router.put("/teams/:id", authMiddleware, updateTeam);
 router.delete("/teams/:id", authMiddleware, deleteTeam);
+
+// rotas do calculo da hidratação
+
+router.post(
+  "/hydration/calculate",
+  authMiddleware,
+  hydrationController.calcularHidratacao
+);
 
 module.exports = router;
