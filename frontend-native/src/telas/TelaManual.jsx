@@ -3,69 +3,106 @@ import {
   StyleSheet,
   View,
   ScrollView,
+  Text, // Alterado para o componente nativo para unificar as fontes do sistema
 } from 'react-native';
-import {
-  Text,
-  useTheme,
-} from 'react-native-paper';
+import { usarTema } from '../contextos/ContextoTema';
 
 const TelaManual = () => {
-  const theme = useTheme();
+  const { temaTemaEscuro } = usarTema();
+
+  const cores = {
+    fundoApp: temaTemaEscuro ? '#121212' : '#f3f4f6',
+    fundoCabecalho: temaTemaEscuro ? '#1e1e1e' : '#f9fafb',
+    bordaCabecalho: temaTemaEscuro ? '#2d2d2d' : '#e5e7eb',
+    textoPrincipal: temaTemaEscuro ? '#ffffff' : '#1f2937',
+    textoSecundario: temaTemaEscuro ? '#a3a3a3' : '#6b7280',
+    fundoCartao: temaTemaEscuro ? '#1e1e1e' : '#ffffff',
+    bordaCartao: temaTemaEscuro ? '#2d2d2d' : '#f3f4f6',
+    fundoInfo: temaTemaEscuro ? '#1d3557' : '#e0f2fe',
+    textoInfo: temaTemaEscuro ? '#f1faee' : '#0369a1',
+    bordaInfo: '#0284c7', 
+    vermelhoPadrao: '#c41e3a',
+  };
 
   const estilos = StyleSheet.create({
     conteiner: {
       flex: 1,
-      backgroundColor: theme.colors.background,
+      backgroundColor: cores.fundoApp,
     },
-    conteudoRolagem: {
-      padding: 16,
+    cabecalho: {
+      backgroundColor: cores.fundoCabecalho, 
+      paddingVertical: 20,
+      paddingHorizontal: 30,
+      borderBottomWidth: 1,
+      borderBottomColor: cores.bordaCabecalho,
+      shadowColor: '#000000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: temaTemaEscuro ? 0.2 : 0.05,
+      shadowRadius: 4,
+      elevation: 2,
     },
-    titulo: {
+    tituloCabecalho: {
       fontSize: 24,
+      color: cores.textoPrincipal, 
       fontWeight: 'bold',
-      color: theme.colors.onBackground,
-      marginBottom: 20,
+    },
+    conteudo: {
+      flex: 1,
+      padding: 30,
     },
     secao: {
-      marginBottom: 20,
+      marginBottom: 30,
     },
     titulosecao: {
       fontSize: 18,
-      fontWeight: '600',
-      color: theme.colors.onBackground,
-      marginBottom: 10,
+      fontWeight: 'bold',
+      color: cores.textoPrincipal,
+      marginBottom: 16,
     },
     listaVerificacao: {
-      backgroundColor: theme.colors.surface,
-      borderRadius: 8,
-      padding: 12,
+      backgroundColor: cores.fundoCartao,
+      borderRadius: 10,
+      padding: 16,
       marginBottom: 12,
+      shadowColor: '#000000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: temaTemaEscuro ? 0.2 : 0.06,
+      shadowRadius: 4,
+      elevation: 2,
+      borderWidth: 1,
+      borderColor: cores.bordaCartao,
     },
     itemListaVerificacao: {
-      fontSize: 14,
-      color: theme.colors.onBackground,
+      fontSize: 15,
+      color: cores.textoPrincipal,
       marginBottom: 8,
-      paddingLeft: 12,
+      lineHeight: 22,
     },
     caixaInfo: {
-      backgroundColor: theme.colors.primaryContainer,
+      backgroundColor: cores.fundoInfo,
       borderRadius: 8,
-      padding: 12,
+      padding: 16,
       borderLeftWidth: 4,
-      borderLeftColor: theme.colors.primary,
+      borderLeftColor: cores.bordaInfo,
+      marginTop: 4,
     },
     textoInfo: {
       fontSize: 14,
-      color: theme.colors.onPrimaryContainer,
-      lineHeight: 20,
+      color: cores.textoInfo,
+      lineHeight: 22,
+      fontWeight: '500',
     },
   });
 
   return (
     <ScrollView style={estilos.conteiner}>
-      <View style={estilos.conteudoRolagem}>
-        <Text style={estilos.titulo}>Manual Operacional</Text>
+      {/* Cabeçalho Padronizado */}
+      <View style={estilos.cabecalho}>
+        <Text style={estilos.tituloCabecalho}>Manual Operacional</Text>
+      </View>
 
+      <View style={estilos.conteudo}>
+        {/* Seção 1 */}
         <View style={estilos.secao}>
           <Text style={estilos.titulosecao}>📏 Padronização de Pesagem</Text>
           <View style={estilos.listaVerificacao}>
@@ -81,6 +118,7 @@ const TelaManual = () => {
           </View>
         </View>
 
+        {/* Seção 2 */}
         <View style={estilos.secao}>
           <Text style={estilos.titulosecao}>💧 Hidratação</Text>
           <View style={estilos.listaVerificacao}>
@@ -90,6 +128,7 @@ const TelaManual = () => {
           </View>
         </View>
 
+        {/* Seção 3 */}
         <View style={estilos.secao}>
           <Text style={estilos.titulosecao}>⚡ Avaliação de Sudoração</Text>
           <View style={estilos.listaVerificacao}>
@@ -99,6 +138,7 @@ const TelaManual = () => {
           </View>
         </View>
 
+        {/* Seção 4 */}
         <View style={estilos.secao}>
           <Text style={estilos.titulosecao}>📝 Documentação</Text>
           <View style={estilos.caixaInfo}>

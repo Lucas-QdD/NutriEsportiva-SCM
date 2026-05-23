@@ -1,7 +1,14 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { 
+  View, 
+  Text, 
+  TouchableOpacity, 
+  StyleSheet, 
+  ScrollView, 
+  useWindowDimensions 
+} from 'react-native';
 
 import TelaLogin from '../telas/TelaLogin';
 import TelaPrincipal from '../telas/TelaPrincipal';
@@ -11,31 +18,75 @@ import TelaConfiguracoes from '../telas/TelaConfiguracoes';
 import TelaManual from '../telas/TelaManual';
 import TelaTermos from '../telas/TelaTermos';
 import { usarAutenticacao } from '../contextos/ContextoAutenticacao';
+import { usarTema } from '../contextos/ContextoTema';
 
 const Pilha = createStackNavigator();
 
 const LayoutComBarraLateral = ({ children, navigation, tipoUsuario }) => {
-  const ehNutricionista = tipoUsuario === 'NUTRITIONIST';
+  const ehNutricionista = tipoUsuario === 'NUTRICIONISTA';
+  const { temaTemaEscuro } = usarTema();
+  const { width } = useWindowDimensions();
+  const ehDispositivoMovel = width < 768;
+
+  // Estado para controlar se a barra lateral está aberta/expandida no celular
+  const [expandido, setExpandido] = useState(!ehDispositivoMovel);
 
   const itensNavegacao = [
     { nome: 'Painel', rota: 'PainelInicio', icone: '📊' },
-    ...(ehNutricionista ? [{ nome: 'Atletas', rota: 'AtletasInicio', icone: '👥' }] : []),
-    ...(!ehNutricionista ? [{ nome: 'Começar Avaliação', rota: 'AvaliacaoInicio', icone: '📝' }] : []),
+    ...(ehNutricionista ? [{ nome: 'Atletas', rota: 'Atletas', icone: '👥' }] : []),
+    { nome: 'Avaliações', rota: 'Avaliacao', icone: '📝' },
     { nome: 'Configurações', rota: 'ConfiguracoesInicio', icone: '⚙️' },
-    { nome: 'Manual Operacional', rota: 'Manual', icone: '📖' },
-    { nome: 'Termos de Uso', rota: 'Termos', icone: '📋' },
+    { nome: 'Manual', rota: 'Manual', icone: '📖' }, 
+    { nome: 'Termos', rota: 'Termos', icone: '📋' },   
   ];
 
+  const cores = {
+    fundoApp: temaTemaEscuro ? '#121212' : '#f3f4f6',
+    barraLateral: temaTemaEscuro ? '#380000' : '#610000',
+    bordaLateral: temaTemaEscuro ? '#310000' : '#420000',
+  };
+
+  const larguraBarra = ehDispositivoMovel ? (expandido ? 240 : 70) : 260;
+  const mostrarTextos = !ehDispositivoMovel || expandido;
+
   return (
-    <View style={estilos.layoutPrincipal}>
-      {/* Barra Lateral */}
-      <View style={estilos.barraLateral}>
-        <ScrollView style={estilos.conteudoBarraLateral}>
-          {/* Cabeçalho da Barra Lateral */}
-          <View style={estilos.cabecalhoBarraLateral}>
-            <Text style={estilos.tituloBarraLateral}>SAO</Text>
-            <Text style={estilos.subtituloBarraLateral}>NutriEsportiva</Text>
-            <Text style={estilos.subtituloBarraLateral}>SÃO CAMILO</Text>
+    <View style={[estilos.layoutPrincipal, { backgroundColor: cores.fundoApp }]}>
+      {/* Barra Lateral Dinâmica e Expansível */}
+      <View 
+        style={[
+          estilos.barraLateral, 
+          { 
+            backgroundColor: cores.barraLateral, 
+            borderRightColor: cores.bordaLateral,
+            width: larguraBarra,
+            position: (ehDispositivoMovel && expandido) ? 'absolute' : 'relative',
+            zIndex: 999,
+            height: '100%',
+          }
+        ]}
+      >
+        <ScrollView style={estilos.conteudoBarraLateral} showsVerticalScrollIndicator={false}>
+          {/* Cabeçalho com Botão de Expandir/Colapsar (Menu Hambúrguer) */}
+          <View style={[estilos.cabecalhoBarraLateral, { borderBottomColor: cores.bordaLateral, padding: 12 }]}>
+            {ehDispositivoMovel ? (
+              <TouchableOpacity 
+                style={estilos.botaoAlternar} 
+                onPress={() => setExpandido(!expandido)}
+              >
+                {/* Ícone de três listras (Hambúrguer) se fechado, ou X se aberto */}
+                <Text style={estilos.textoBotaoAlternar}>{expandido ? '✕' : '☰'}</Text>
+              </TouchableOpacity>
+            ) : (
+              <Text style={[estilos.tituloBarraLateral, { color: '#ffffff' }]}>NESC</Text>
+            )}
+
+            {mostrarTextos && (
+              <>
+                {ehDispositivoMovel && <Text style={[estilos.tituloBarraLateral, { color: '#ffffff', marginTop: 8 }]}>SAO</Text>}
+                <Text style={estilos.subtituloBarraLateral}>NutriEsportiva</Text>
+                <Text style={estilos.subtituloBarraLateral}>São Camilo</Text>
+              </>
+            )}
           </View>
 
           {/* Itens de Navegação */}
@@ -43,20 +94,24 @@ const LayoutComBarraLateral = ({ children, navigation, tipoUsuario }) => {
             {itensNavegacao.map((item) => (
               <TouchableOpacity
                 key={item.rota}
-                style={estilos.itemNavegacao}
-                onPress={() => navigation.navigate(item.rota)}
+                style={[
+                  estilos.itemNavegacao, 
+                  { 
+                    justifyContent: mostrarTextos ? 'flex-start' : 'center', 
+                    paddingHorizontal: mostrarTextos ? 20 : 0 
+                  }
+                ]}
+                onPress={() => {
+                  navigation.navigate(item.rota);
+                  if (ehDispositivoMovel) setExpandido(false);
+                }}
               >
-                <Text style={estilos.iconeItem}>{item.icone}</Text>
-                <Text style={estilos.textoItem}>{item.nome}</Text>
+                <Text style={[estilos.iconeItem, { marginRight: mostrarTextos ? 16 : 0 }]}>
+                  {item.icone}
+                </Text>
+                {mostrarTextos && <Text style={estilos.textoItem}>{item.nome}</Text>}
               </TouchableOpacity>
             ))}
-          </View>
-
-          {/* Rodapé */}
-          <View style={estilos.rodapeBarraLateral}>
-            <Text style={estilos.textoRodape}>
-              {ehNutricionista ? 'Nutricionista' : 'Atleta'}
-            </Text>
           </View>
         </ScrollView>
       </View>
@@ -69,89 +124,61 @@ const LayoutComBarraLateral = ({ children, navigation, tipoUsuario }) => {
   );
 };
 
-const NavegadorAutenticacao = () => {
-  return (
-    <Pilha.Navigator
-      screenOptions={{
-        headerShown: false,
-      }}
-    >
-      <Pilha.Screen name="Entrar" component={TelaLogin} />
-    </Pilha.Navigator>
-  );
-};
-
 const NavegadorApp = ({ tipoUsuario }) => {
   return (
     <Pilha.Navigator
       screenOptions={{
-        headerStyle: {
+        headerStyle: { 
           backgroundColor: '#c41e3a',
+          elevation: 0,
+          shadowOpacity: 0,
+          borderBottomWidth: 0,
         },
         headerTintColor: '#ffffff',
-        headerTitleStyle: {
-          fontWeight: 'bold',
-        },
+        headerTitleStyle: { fontWeight: 'bold', fontSize: 18 },
       }}
     >
-      <Pilha.Screen
-        name="PainelInicio"
-        options={{ title: 'Dashboard' }}
-      >
+      <Pilha.Screen name="PainelInicio" options={{ title: 'Painel Principal' }}>
         {(props) => (
           <LayoutComBarraLateral navigation={props.navigation} tipoUsuario={tipoUsuario}>
             <TelaPrincipal {...props} />
           </LayoutComBarraLateral>
         )}
       </Pilha.Screen>
-      {tipoUsuario === 'NUTRITIONIST' && (
-        <Pilha.Screen
-          name="AtletasInicio"
-          options={{ title: 'Atletas' }}
-        >
-          {(props) => (
-            <LayoutComBarraLateral navigation={props.navigation} tipoUsuario={tipoUsuario}>
-              <TelaAtletas {...props} />
-            </LayoutComBarraLateral>
-          )}
-        </Pilha.Screen>
-      )}
-      {tipoUsuario === 'ATHLETE' && (
-        <Pilha.Screen
-          name="AvaliacaoInicio"
-          options={{ title: 'Começar Avaliação' }}
-        >
-          {(props) => (
-            <LayoutComBarraLateral navigation={props.navigation} tipoUsuario={tipoUsuario}>
-              <TelaAvaliacao {...props} />
-            </LayoutComBarraLateral>
-          )}
-        </Pilha.Screen>
-      )}
-      <Pilha.Screen
-        name="ConfiguracoesInicio"
-        options={{ title: 'Configurações' }}
-      >
+
+      <Pilha.Screen name="Atletas" options={{ title: 'Gerenciar Atletas' }}>
+        {(props) => (
+          <LayoutComBarraLateral navigation={props.navigation} tipoUsuario={tipoUsuario}>
+            <TelaAtletas {...props} />
+          </LayoutComBarraLateral>
+        )}
+      </Pilha.Screen>
+
+      <Pilha.Screen name="Avaliacao" options={{ title: 'Avaliação Nutricional' }}>
+        {(props) => (
+          <LayoutComBarraLateral navigation={props.navigation} tipoUsuario={tipoUsuario}>
+            <TelaAvaliacao {...props} />
+          </LayoutComBarraLateral>
+        )}
+      </Pilha.Screen>
+
+      <Pilha.Screen name="ConfiguracoesInicio" options={{ title: 'Configurações' }}>
         {(props) => (
           <LayoutComBarraLateral navigation={props.navigation} tipoUsuario={tipoUsuario}>
             <TelaConfiguracoes {...props} />
           </LayoutComBarraLateral>
-          )}
+        )}
       </Pilha.Screen>
-      <Pilha.Screen
-        name="Manual"
-        options={{ title: 'Manual Operacional' }}
-      >
+
+      <Pilha.Screen name="Manual" options={{ title: 'Manual Operacional' }}>
         {(props) => (
           <LayoutComBarraLateral navigation={props.navigation} tipoUsuario={tipoUsuario}>
             <TelaManual {...props} />
           </LayoutComBarraLateral>
         )}
       </Pilha.Screen>
-      <Pilha.Screen
-        name="Termos"
-        options={{ title: 'Termos de Uso' }}
-      >
+
+      <Pilha.Screen name="Termos" options={{ title: 'Termos de Uso' }}>
         {(props) => (
           <LayoutComBarraLateral navigation={props.navigation} tipoUsuario={tipoUsuario}>
             <TelaTermos {...props} />
@@ -163,14 +190,15 @@ const NavegadorApp = ({ tipoUsuario }) => {
 };
 
 export const NavegadorPrincipal = () => {
-  const { autenticado, tipoUsuario } = usarAutenticacao();
-
+  const { autenticado, usuario } = usarAutenticacao();
   return (
     <NavigationContainer>
       {autenticado ? (
-        <NavegadorApp tipoUsuario={tipoUsuario} />
+        <NavegadorApp tipoUsuario={usuario?.papel} />
       ) : (
-        <NavegadorAutenticacao />
+        <Pilha.Navigator screenOptions={{ headerShown: false }}>
+          <Pilha.Screen name="Entrar" component={TelaLogin} />
+        </Pilha.Navigator>
       )}
     </NavigationContainer>
   );
@@ -182,70 +210,61 @@ const estilos = StyleSheet.create({
   layoutPrincipal: {
     flex: 1,
     flexDirection: 'row',
-    backgroundColor: '#f3f4f6',
   },
   barraLateral: {
-    width: 280,
-    backgroundColor: '#1f2937', // gray-800
     borderRightWidth: 1,
-    borderRightColor: '#374151', // gray-700
   },
   conteudoBarraLateral: {
     flex: 1,
   },
   cabecalhoBarraLateral: {
-    padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#374151',
     alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
   },
-  tituloBarraLateral: {
+  botaoAlternar: {
+    padding: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+  },
+  textoBotaoAlternar: {
+    color: '#ffffff',
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#c41e3a',
-    marginBottom: 4,
   },
-  subtituloBarraLateral: {
-    fontSize: 12,
-    color: '#ffffff',
+  tituloBarraLateral: {
+    fontSize: 20,
+    fontWeight: 'bold',
     textAlign: 'center',
   },
+  subtituloBarraLateral: {
+    fontSize: 11,
+    color: '#ffffff',
+    textAlign: 'center',
+    marginTop: 2,
+  },
   itensNavegacao: {
-    paddingTop: 20,
+    paddingTop: 16,
   },
   itemNavegacao: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 20,
+    paddingVertical: 16,
     marginBottom: 4,
-  },
-  itemNavegacaoAtivo: {
-    backgroundColor: '#c41e3a',
+    width: '100%',
   },
   iconeItem: {
-    fontSize: 18,
-    marginRight: 16,
+    fontSize: 22,
     color: '#ffffff',
+    textAlign: 'center',
+    minWidth: 70,
   },
   textoItem: {
-    fontSize: 16,
+    fontSize: 15,
     color: '#ffffff',
     fontWeight: '500',
-  },
-  rodapeBarraLateral: {
-    padding: 20,
-    borderTopWidth: 1,
-    borderTopColor: '#374151',
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-  },
-  textoRodape: {
-    fontSize: 12,
-    color: '#9ca3af',
-    textAlign: 'center',
   },
   areaConteudo: {
     flex: 1,

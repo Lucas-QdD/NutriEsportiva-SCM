@@ -2,42 +2,42 @@ const prisma = require("../lib/prisma");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 
-const validRoles = ["ATHLETE", "COACH", "NUTRITIONIST"];
+const validRoles = ["ATLETA", "TECNICO", "NUTRICIONISTA"];
 
-async function createUser(req, res) {
+async function createUsuario(req, res) {
   try {
-    const { name, email, password, role, teamId } = req.body;
+    const { nome, email, senha, papel, equipeId } = req.body;
 
-    if (!name || !email || !password || !role) {
+    if (!nome || !email || !senha || !papel) {
       return res.status(400).json({
-        error: "name, email, password e role são obrigatórios",
+        error: "nome, email, senha e papel são obrigatórios",
       });
     }
 
-    const validRoles = ["ATHLETE", "COACH", "NUTRITIONIST"];
+    const validRoles = ["ATLETA", "TECNICO", "NUTRICIONISTA"];
 
-    if (!validRoles.includes(role)) {
+    if (!validRoles.includes(papel)) {
       return res.status(400).json({
-        error: "role inválida",
+        error: "papel inválida",
       });
     }
 
-    const existingUser = await prisma.user.findUnique({
+    const existingUsuario = await prisma.usuario.findUnique({
       where: { email },
     });
 
-    if (existingUser) {
+    if (existingUsuario) {
       return res.status(409).json({
         error: "Email já está em uso",
       });
     }
 
-    if (teamId) {
-      const team = await prisma.team.findUnique({
-        where: { id: teamId },
+    if (equipeId) {
+      const equipe = await prisma.equipe.findUnique({
+        where: { id: equipeId },
       });
 
-      if (!team) {
+      if (!equipe) {
         return res.status(404).json({
           error: "Equipe não encontrada",
         });
@@ -46,19 +46,19 @@ async function createUser(req, res) {
 
     // criptografa a senha antes de salvar no banco
     const saltRounds = 10;
-    const hashedPassword = await bcrypt.hash(password, saltRounds);
+    const hashedPassword = await bcrypt.hash(senha, saltRounds);
 
-    const user = await prisma.user.create({
+    const usuario = await prisma.usuario.create({
       data: {
-        name,
+        nome,
         email,
-        password: hashedPassword,
-        role,
-        teamId: teamId || null,
+        senha: hashedPassword,
+        papel,
+        equipeId: equipeId || null,
       },
     });
 
-    return res.status(201).json(user);
+    return res.status(201).json(usuario);
   } catch (error) {
     console.error("Erro ao criar usuário:", error);
 
@@ -68,24 +68,24 @@ async function createUser(req, res) {
   }
 }
 
-async function listUsers(req, res) {
+async function listUsuarios(req, res) {
   try {
-    const users = await prisma.user.findMany({
+    const usuarios = await prisma.usuario.findMany({
       orderBy: {
-        name: "asc",
+        nome: "asc",
       },
       select: {
         id: true,
-        name: true,
+        nome: true,
         email: true,
-        role: true,
-        teamId: true,
-        createdAt: true,
-        updatedAt: true,
+        papel: true,
+        equipeId: true,
+        criadoEm: true,
+        atualizadoEm: true,
       },
     });
 
-    return res.status(200).json(users);
+    return res.status(200).json(usuarios);
   } catch (error) {
     console.error("Erro ao listar usuários:", error);
 
@@ -96,13 +96,13 @@ async function listUsers(req, res) {
 }
 
 // busca um usuário específico pelo id
-async function getUserById(req, res) {
+async function getUsuarioById(req, res) {
   try {
-    // id vem da rota (/users/:id)
+    // id vem da rota (/usuarios/:id)
     const { id } = req.params;
 
     // busca o usuário no banco pelo id
-    const user = await prisma.user.findUnique({
+    const usuario = await prisma.usuario.findUnique({
       where: {
         id,
       },
@@ -110,24 +110,24 @@ async function getUserById(req, res) {
       // selecionamos apenas os campos seguros 
       select: {
         id: true,
-        name: true,
+        nome: true,
         email: true,
-        role: true,
-        teamId: true,
-        createdAt: true,
-        updatedAt: true,
+        papel: true,
+        equipeId: true,
+        criadoEm: true,
+        atualizadoEm: true,
       },
     });
 
     // se não encontrar, retorna erro 404
-    if (!user) {
+    if (!usuario) {
       return res.status(404).json({
         error: "Usuário não encontrado",
       });
     }
 
     // retorna o usuário encontrado
-    return res.status(200).json(user);
+    return res.status(200).json(usuario);
   } catch (error) {
     console.error("Erro ao buscar usuário:", error);
 
@@ -138,62 +138,62 @@ async function getUserById(req, res) {
 }
 
 // atualiza um usuário existente
-async function updateUser(req, res) {
+async function updateUsuario(req, res) {
   try {
-    // id vem da rota (/users/:id)
+    // id vem da rota (/usuarios/:id)
     const { id } = req.params;
 
     // novos dados enviados no body
-    const { name, email, password, role, teamId } = req.body;
+    const { nome, email, senha, papel, equipeId } = req.body;
 
     // verifica se o usuário existe antes de tentar atualizar
-    const user = await prisma.user.findUnique({
+    const usuario = await prisma.usuario.findUnique({
       where: { id },
     });
 
-    if (!user) {
+    if (!usuario) {
       return res.status(404).json({
         error: "Usuário não encontrado",
       });
     }
 
     // validação básica (mantendo simples por enquanto)
-    if (!name || !email || !role) {
+    if (!nome || !email || !papel) {
       return res.status(400).json({
-        error: "name, email e role são obrigatórios",
+        error: "nome, email e papel são obrigatórios",
       });
     }
 
-    // valida role
-    const validRoles = ["ATHLETE", "COACH", "NUTRITIONIST"];
+    // valida papel
+    const validRoles = ["ATLETA", "TECNICO", "NUTRICIONISTA"];
 
-    if (!validRoles.includes(role)) {
+    if (!validRoles.includes(papel)) {
       return res.status(400).json({
-        error: "role inválida",
+        error: "papel inválida",
       });
     }
 
     // verificar se outro usuário já usa esse email
-    const existingUser = await prisma.user.findFirst({
+    const existingUsuario = await prisma.usuario.findFirst({
       where: {
         email,
         NOT: { id }, // ignora o próprio usuário que está sendo atualizado
       },
     });
 
-    if (existingUser) {
+    if (existingUsuario) {
       return res.status(409).json({
         error: "Email já está em uso",
       });
     }
 
-    // valida teamId (se enviado)
-    if (teamId) {
-      const team = await prisma.team.findUnique({
-        where: { id: teamId },
+    // valida equipeId (se enviado)
+    if (equipeId) {
+      const equipe = await prisma.equipe.findUnique({
+        where: { id: equipeId },
       });
 
-      if (!team) {
+      if (!equipe) {
         return res.status(404).json({
           error: "Equipe não encontrada",
         });
@@ -201,28 +201,28 @@ async function updateUser(req, res) {
     }
 
     // atualiza o usuário
-    const updatedUser = await prisma.user.update({
+    const updatedUsuario = await prisma.usuario.update({
       where: { id },
       data: {
-        name,
+        nome,
         email,
-        role,
-        teamId: teamId || null,
-        // password só será atualizada se for enviada
-        ...(password && { password }),
+        papel,
+        equipeId: equipeId || null,
+        // senha só será atualizada se for enviada
+        ...(senha && { senha }),
       },
       select: {
         id: true,
-        name: true,
+        nome: true,
         email: true,
-        role: true,
-        teamId: true,
-        createdAt: true,
-        updatedAt: true,
+        papel: true,
+        equipeId: true,
+        criadoEm: true,
+        atualizadoEm: true,
       },
     });
 
-    return res.status(200).json(updatedUser);
+    return res.status(200).json(updatedUsuario);
   } catch (error) {
     console.error("Erro ao atualizar usuário:", error);
 
@@ -233,24 +233,24 @@ async function updateUser(req, res) {
 }
 
 // remove um usuário existente
-async function deleteUser(req, res) {
+async function deleteUsuario(req, res) {
   try {
-    // id vem da rota (/users/:id)
+    // id vem da rota (/usuarios/:id)
     const { id } = req.params;
 
     // verifica se o usuário existe antes de deletar
-    const user = await prisma.user.findUnique({
+    const usuario = await prisma.usuario.findUnique({
       where: { id },
     });
 
-    if (!user) {
+    if (!usuario) {
       return res.status(404).json({
         error: "Usuário não encontrado",
       });
     }
 
     // remove o usuário do banco
-    await prisma.user.delete({
+    await prisma.usuario.delete({
       where: { id },
     });
 
@@ -267,30 +267,32 @@ async function deleteUser(req, res) {
 }
 
 // realiza login do usuário
-async function loginUser(req, res) {
+async function loginUsuario(req, res) {
   try {
-    const { email, password } = req.body;
+    const { email, senha } = req.body;
 
     // validação básica
-    if (!email || !password) {
+    if (!email || !senha) {
       return res.status(400).json({
-        error: "email e password são obrigatórios",
+        error: "email e senha são obrigatórios",
       });
     }
 
     // busca usuário pelo email
-    const user = await prisma.user.findUnique({
+    const usuario = await prisma.usuario.findUnique({
       where: { email },
     });
 
-    if (!user) {
+    if (!usuario) {
       return res.status(404).json({
         error: "Usuário não encontrado",
       });
     }
 
-    // compara senha informada com senha criptografada
-    if (user.password !== password) {
+    // compara senha informada com senha criptografada usando bcrypt
+    const senhaMatch = await bcrypt.compare(senha, usuario.senha);
+
+    if (!senhaMatch) {
       return res.status(401).json({
         error: "Senha incorreta",
       });
@@ -299,9 +301,9 @@ async function loginUser(req, res) {
     // gera token JWT
     const token = jwt.sign(
       {
-        id: user.id,
-        email: user.email,
-        role: user.role,
+        id: usuario.id,
+        email: usuario.email,
+        papel: usuario.papel,
       },
       process.env.JWT_SECRET, 
       {
@@ -311,12 +313,12 @@ async function loginUser(req, res) {
 
     // retorna usuário (sem senha) + token
     return res.status(200).json({
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        teamId: user.teamId,
+      usuario: {
+        id: usuario.id,
+        nome: usuario.nome,
+        email: usuario.email,
+        papel: usuario.papel,
+        equipeId: usuario.equipeId,
       },
       token,
     });
@@ -330,10 +332,10 @@ async function loginUser(req, res) {
 }
 
 module.exports = {
-  createUser,
-  listUsers,
-  getUserById,
-  updateUser,
-  deleteUser,
-  loginUser,
+  createUsuario,
+  listUsuarios,
+  getUsuarioById,
+  updateUsuario,
+  deleteUsuario,
+  loginUsuario,
 };

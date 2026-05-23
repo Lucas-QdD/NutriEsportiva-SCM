@@ -9,108 +9,126 @@ import {
   Alert,
 } from 'react-native';
 import { usarAutenticacao } from '../contextos/ContextoAutenticacao';
+import { usarTema } from '../contextos/ContextoTema'; // Importado para manter consistência com o Dark Mode
 
 const TelaLogin = () => {
-  const { entrar, carregando, erro, limparErro } = usarAutenticacao();
+  // Puxamos também a função 'sair' para deslogar caso o papel esteja incorreto
+  const { entrar, sair, carregando, erro } = usarAutenticacao();
+  const { temaTemaEscuro } = usarTema();
 
   const [dadosFormulario, setDadosFormulario] = useState({
     nomeUsuario: '',
     senha: '',
-    tipoUsuario: 'NUTRICIONISTA',
+    tipoUsuario: 'NUTRICIONISTA', // 'NUTRICIONISTA' ou 'ATLETA'
   });
 
   const tratarEntrada = async () => {
-    const sucesso = await entrar(
+    if (!dadosFormulario.nomeUsuario || !dadosFormulario.senha) {
+      Alert.alert('Atenção', 'Por favor, preencha todos os campos.');
+      return;
+    }
+
+    // 1. Tenta fazer o login padrão na API/Contexto
+    const usuarioLogado = await entrar(
       dadosFormulario.nomeUsuario,
       dadosFormulario.senha,
       dadosFormulario.tipoUsuario
     );
-    if (!sucesso) {
-      Alert.alert('Erro', erro || 'Falha ao fazer login');
+
+    if (usuarioLogado) {
+      // 2. Restrição de Segurança: Verifica se o papel no banco bate com a seleção do botão
+      // Caso sua função entrar já retorne o objeto usuário, usamos ele; senão, validamos pelo estado global atualizado
+      const papelNoBanco = usuarioLogado?.papel; 
+
+      if (papelNoBanco && papelNoBanco !== dadosFormulario.tipoUsuario) {
+        // Se tentou entrar como Nutricionista sendo Atleta (ou vice-versa), barra o acesso!
+        await sair(); 
+        Alert.alert(
+          'Acesso Negado', 
+          `Este usuário está cadastrado como ${papelNoBanco === 'ATLETA' ? 'Atleta' : 'Nutricionista'}. Selecione a opção correta para entrar.`
+        );
+      }
+    } else {
+      Alert.alert('Erro', erro || 'Falha ao fazer login. Verifique suas credenciais.');
     }
+  };
+
+  // Mapeamento dinâmico de cores idêntico ao restante do app
+  const cores = {
+    fundoApp: temaTemaEscuro ? '#121212' : '#f3f4f6',
+    fundoCartao: temaTemaEscuro ? '#1e1e1e' : '#ffffff',
+    bordaCartao: temaTemaEscuro ? '#2d2d2d' : '#e5e7eb',
+    textoPrincipal: temaTemaEscuro ? '#ffffff' : '#1f2937',
+    textoSecundario: temaTemaEscuro ? '#a3a3a3' : '#6b7280',
+    fundoInput: temaTemaEscuro ? '#2a2a2a' : '#ffffff',
+    bordaInput: temaTemaEscuro ? '#404040' : '#d1d5db',
+    vermelhoPadrao: '#c41e3a',
   };
 
   const estilos = StyleSheet.create({
     conteiner: {
       flex: 1,
-      backgroundColor: '#f3f4f6', 
+      backgroundColor: cores.fundoApp, 
       justifyContent: 'center',
       alignItems: 'center',
-      padding: 20,
+      padding: 24,
     },
     caixaLogin: {
-      backgroundColor: '#ffffff',
-      borderRadius: 10,
-      padding: 50,
+      backgroundColor: cores.fundoCartao,
+      borderRadius: 12,
+      padding: 32,
       width: '100%',
-      maxWidth: 420,
-      borderWidth: 2,
-      borderColor: '#000000',
+      maxWidth: 400,
+      borderWidth: 1,
+      borderColor: cores.bordaCartao,
       shadowColor: '#000000',
-      shadowOffset: {
-        width: 0,
-        height: 20,
-      },
-      shadowOpacity: 0.12,
-      shadowRadius: 60,
-      elevation: 20,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: temaTemaEscuro ? 0.3 : 0.08,
+      shadowRadius: 12,
+      elevation: 5,
     },
     logo: {
       alignItems: 'center',
-      marginBottom: 45,
+      marginBottom: 32,
     },
     textoLogoGrande: {
       fontSize: 32,
-      fontWeight: '800',
-      color: '#c41e3a',
-      marginTop: 15,
-      marginBottom: 3,
+      fontWeight: 'bold',
+      color: cores.vermelhoPadrao,
+      marginBottom: 2,
       letterSpacing: -0.5,
     },
     textoLogoPequeno: {
-      color: '#6b7280', 
+      color: cores.textoSecundario, 
       fontSize: 13,
       fontWeight: '600',
       letterSpacing: 1,
+      textAlign: 'center',
     },
     formulario: {
-      gap: 20,
+      gap: 16,
     },
     grupoFormulario: {
-      gap: 8,
+      gap: 6,
     },
     rotulo: {
       fontWeight: '500',
-      color: '#374151',
+      color: cores.textoPrincipal,
       fontSize: 14,
     },
     entrada: {
-      paddingVertical: 10,
-      paddingHorizontal: 12,
+      paddingVertical: 12,
+      paddingHorizontal: 16,
       borderWidth: 1,
-      borderColor: '#d1d5db', 
+      borderColor: cores.bordaInput, 
       borderRadius: 10,
-      fontSize: 14,
-      backgroundColor: '#ffffff',
-    },
-    entradaFoco: {
-      borderColor: '#c41e3a',
-      shadowColor: '#c41e3a',
-      shadowOffset: {
-        width: 0,
-        height: 0,
-      },
-      shadowOpacity: 0.1,
-      shadowRadius: 3,
-      elevation: 3,
+      fontSize: 15,
+      backgroundColor: cores.fundoInput,
+      color: cores.textoPrincipal,
     },
     selecaoTipo: {
       gap: 8,
-    },
-    rotuloSelecao: {
-      fontWeight: '500',
-      color: '#374151',
-      fontSize: 14,
+      marginTop: 4,
     },
     conteinerBotoesTipo: {
       flexDirection: 'row',
@@ -118,49 +136,59 @@ const TelaLogin = () => {
     },
     botaoTipo: {
       flex: 1,
-      paddingVertical: 10,
-      paddingHorizontal: 16,
+      paddingVertical: 12,
       borderRadius: 10,
       borderWidth: 1.5,
-      borderColor: '#d1d5db',
-      backgroundColor: '#ffffff',
+      borderColor: cores.bordaInput,
+      backgroundColor: cores.fundoInput,
     },
     botaoTipoSelecionado: {
-      borderColor: '#c41e3a',
-      backgroundColor: 'rgba(196, 30, 58, 0.05)',
+      borderColor: cores.vermelhoPadrao,
+      backgroundColor: 'rgba(196, 30, 58, 0.08)',
     },
     textoBotaoTipo: {
       textAlign: 'center',
       fontSize: 14,
       fontWeight: '600',
-      color: '#374151',
+      color: cores.textoSecundario,
     },
     textoBotaoTipoSelecionado: {
-      color: '#c41e3a',
+      color: cores.vermelhoPadrao,
     },
     botaoEntrar: {
-      backgroundColor: '#c41e3a',
-      paddingVertical: 10,
-      paddingHorizontal: 16,
+      backgroundColor: cores.vermelhoPadrao,
+      paddingVertical: 14,
       borderRadius: 10,
       alignItems: 'center',
-      marginTop: 10,
+      marginTop: 12,
       shadowColor: '#000000',
-      shadowOffset: {
-        width: 0,
-        height: 6,
-      },
+      shadowOffset: { width: 0, height: 4 },
       shadowOpacity: 0.15,
-      shadowRadius: 20,
-      elevation: 6,
+      shadowRadius: 8,
+      elevation: 4,
     },
     textoBotaoEntrar: {
       color: '#ffffff',
-      fontSize: 14,
+      fontSize: 16,
       fontWeight: '600',
     },
     carregando: {
-      marginTop: 20,
+      marginTop: 16,
+      alignItems: 'center',
+    },
+    caixaErro: {
+      position: 'absolute',
+      bottom: 24,
+      left: 24,
+      right: 24,
+      backgroundColor: '#ef4444',
+      padding: 16,
+      borderRadius: 10,
+    },
+    textoErro: {
+      color: '#ffffff',
+      fontWeight: '600',
+      textAlign: 'center',
     },
   });
 
@@ -169,13 +197,14 @@ const TelaLogin = () => {
       <View style={estilos.caixaLogin}>
         {/* Logo */}
         <View style={estilos.logo}>
-          <Text style={estilos.textoLogoGrande}>SAO</Text>
+          <Text style={estilos.textoLogoGrande}>NESC</Text>
           <Text style={estilos.textoLogoPequeno}>NutriEsportiva</Text>
-          <Text style={estilos.textoLogoPequeno}>SÃO CAMILO</Text>
+          <Text style={estilos.textoLogoPequeno}>São Camilo</Text>
         </View>
 
         {/* Formulário */}
         <View style={estilos.formulario}>
+          {/* Campo Usuário */}
           <View style={estilos.grupoFormulario}>
             <Text style={estilos.rotulo}>Usuário</Text>
             <TextInput
@@ -186,10 +215,12 @@ const TelaLogin = () => {
               style={estilos.entrada}
               editable={!carregando}
               placeholder="Digite seu usuário"
-              placeholderTextColor="#9ca3af"
+              placeholderTextColor={cores.textoSecundario}
+              autoCapitalize="none"
             />
           </View>
 
+          {/* Campo Senha */}
           <View style={estilos.grupoFormulario}>
             <Text style={estilos.rotulo}>Senha</Text>
             <TextInput
@@ -201,47 +232,51 @@ const TelaLogin = () => {
               secureTextEntry
               editable={!carregando}
               placeholder="Digite sua senha"
-              placeholderTextColor="#9ca3af"
+              placeholderTextColor={cores.textoSecundario}
+              autoCapitalize="none"
             />
           </View>
 
           {/* Seleção de Tipo de Usuário */}
           <View style={estilos.selecaoTipo}>
-            <Text style={estilos.rotuloSelecao}>Tipo de Usuário</Text>
+            <Text style={estilos.rotulo}>Tipo de Usuário</Text>
             <View style={estilos.conteinerBotoesTipo}>
+              {/* Botão Nutricionista */}
               <TouchableOpacity
                 style={[
                   estilos.botaoTipo,
-                  dadosFormulario.tipoUsuario === 'NUTRITIONIST' && estilos.botaoTipoSelecionado,
+                  dadosFormulario.tipoUsuario === 'NUTRICIONISTA' && estilos.botaoTipoSelecionado,
                 ]}
                 onPress={() =>
-                  setDadosFormulario({ ...dadosFormulario, tipoUsuario: 'NUTRITIONIST' })
+                  setDadosFormulario({ ...dadosFormulario, tipoUsuario: 'NUTRICIONISTA' })
                 }
                 disabled={carregando}
               >
                 <Text
                   style={[
                     estilos.textoBotaoTipo,
-                    dadosFormulario.tipoUsuario === 'NUTRITIONIST' && estilos.textoBotaoTipoSelecionado,
+                    dadosFormulario.tipoUsuario === 'NUTRICIONISTA' && estilos.textoBotaoTipoSelecionado,
                   ]}
                 >
                   Nutricionista
                 </Text>
               </TouchableOpacity>
+              
+              {/* Botão Atleta */}
               <TouchableOpacity
                 style={[
                   estilos.botaoTipo,
-                  dadosFormulario.tipoUsuario === 'ATHLETE' && estilos.botaoTipoSelecionado,
+                  dadosFormulario.tipoUsuario === 'ATLETA' && estilos.botaoTipoSelecionado,
                 ]}
                 onPress={() =>
-                  setDadosFormulario({ ...dadosFormulario, tipoUsuario: 'ATHLETE' })
+                  setDadosFormulario({ ...dadosFormulario, tipoUsuario: 'ATLETA' })
                 }
                 disabled={carregando}
               >
                 <Text
                   style={[
                     estilos.textoBotaoTipo,
-                    dadosFormulario.tipoUsuario === 'ATHLETE' && estilos.textoBotaoTipoSelecionado,
+                    dadosFormulario.tipoUsuario === 'ATLETA' && estilos.textoBotaoTipoSelecionado,
                   ]}
                 >
                   Atleta
@@ -250,43 +285,28 @@ const TelaLogin = () => {
             </View>
           </View>
 
-          {/* Botão Entrar */}
-          <TouchableOpacity
-            style={estilos.botaoEntrar}
-            onPress={tratarEntrada}
-            disabled={carregando}
-          >
-            <Text style={estilos.textoBotaoEntrar}>
-              {carregando ? 'Entrando...' : 'Entrar'}
-            </Text>
-          </TouchableOpacity>
-
-          {carregando && (
+          {/* Botão Entrar / Indicador de Carregamento */}
+          {carregando ? (
             <View style={estilos.carregando}>
-              <ActivityIndicator size="large" color="#c41e3a" />
+              <ActivityIndicator size="large" color={cores.vermelhoPadrao} />
             </View>
+          ) : (
+            <TouchableOpacity
+              style={estilos.botaoEntrar}
+              onPress={tratarEntrada}
+            >
+              <Text style={estilos.textoBotaoEntrar}>Entrar</Text>
+            </TouchableOpacity>
           )}
         </View>
       </View>
 
-      {/* Barra de Erro */}
-      {erro ? (
-        <View
-         style={{
-          position: 'absolute',
-          bottom: 20,
-          left: 20,
-          right: 20,
-          backgroundColor: '#ef4444',
-          padding: 16,
-          borderRadius: 10,
-         }}
-       >
-         <Text style={{ color: '#ffffff', fontWeight: '600' }}>
-            {String(erro)}
-        </Text>
-      </View>
-    ) : null}
+      {/* Snackbar / Alerta de Erro de conexão/credenciais erradas */}
+      {erro && (
+        <View style={estilos.caixaErro}>
+          <Text style={estilos.textoErro}>{String(erro)}</Text>
+        </View>
+      )}
     </View>
   );
 };

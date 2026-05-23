@@ -14,21 +14,21 @@ export const ProvedorAutenticacao = ({ children }) => {
     setErro('');
 
     try {
-     if (!nomeUsuario || !senha || !tipoDeUsuario) {
+      if (!nomeUsuario || !senha || !tipoDeUsuario) {
         setErro('Preencha todos os campos do login.');
-       setCarregando(false);
-       return false;
+        setCarregando(false);
+        return false;
       } 
 
-      const resposta = await fetch('http://127.0.0.1:3333/login', {
+      const resposta = await fetch('http://192.168.100.103:3333/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-       },
+        },
         body: JSON.stringify({
-         email: nomeUsuario,
-          password: senha,
-       }),
+          email: nomeUsuario,
+          senha: senha,
+        }),
       });
 
       const dados = await resposta.json();
@@ -39,21 +39,28 @@ export const ProvedorAutenticacao = ({ children }) => {
         return false;
       }
 
-      setUsuario(dados.user);
-      setTipoUsuario(dados.user.role);
+      if (dados.usuario.papel !== tipoDeUsuario) {
+        const perfilCorreto = dados.usuario.papel === 'ATLETA' ? 'Atleta' : 'Nutricionista';
+        setErro(`Acesso negado. Esta conta é de um ${perfilCorreto}.`);
+        setCarregando(false);
+        return false;
+      }
+      setUsuario(dados.usuario);
+      setTipoUsuario(dados.usuario.papel);
 
-      await AsyncStorage.setItem('usuario', JSON.stringify(dados.user));
-      await AsyncStorage.setItem('tipoUsuario', dados.user.role);
+      await AsyncStorage.setItem('usuario', JSON.stringify(dados.usuario));
+      await AsyncStorage.setItem('tipoUsuario', dados.usuario.papel);
 
       setCarregando(false);
       return true;
 
-   } catch (erro) {
-     setErro('Erro ao fazer login: ' + erro.message);
+    } catch (erro) {
+      setErro('Erro ao fazer login: ' + erro.message);
       setCarregando(false);
       return false;
-  }
-}, []);
+    }
+  }, []);
+
   const sair = useCallback(async () => {
     try {
       setUsuario(null);

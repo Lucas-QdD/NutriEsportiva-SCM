@@ -6,97 +6,97 @@ datasource db {
   provider = "sqlite"
 }
 
-enum UserRole {
-  ATHLETE
-  COACH
-  NUTRITIONIST
+enum PapelUsuario {
+  ATLETA
+  TECNICO
+  NUTRICIONISTA
 }
 
-enum HydrationStatus {
-  GOOD
-  MODERATE
-  POOR
+enum StatusHidratacao {
+  BOA
+  MODERADA
+  RUIM
 }
 
-model User {
+model Usuario {
   id             String          @id @default(cuid())
-  name           String
+  nome           String
   email          String          @unique
-  password       String
-  role           UserRole
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
+  senha          String
+  papel          PapelUsuario
+  criadoEm       DateTime        @default(now())
+  atualizadoEm   DateTime        @updatedAt
 
-  teamId         String?
-  team           Team?           @relation(fields: [teamId], references: [id])
+  equipeId       String?
+  equipe         Equipe?         @relation(fields: [equipeId], references: [id])
 
-  athleteProfile AthleteProfile?
+  perfilAtleta   PerfilAtleta?
 }
 
-model Team {
+model Equipe {
   id        String           @id @default(cuid())
-  name      String
-  code      String           @unique
-  createdAt DateTime         @default(now())
-  updatedAt DateTime         @updatedAt
+  nome      String
+  codigo    String           @unique
+  criadoEm  DateTime         @default(now())
+  atualizadoEm DateTime      @updatedAt
 
-  users     User[]
-  athletes  AthleteProfile[]
+  usuarios  Usuario[]
+  atletas   PerfilAtleta[]
 }
 
-model AthleteProfile {
-  id          String            @id @default(cuid())
-  userId      String            @unique
-  teamId      String
-  athleteCode String            @unique
-  age         Int
-  sport       String?
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
+model PerfilAtleta {
+  id           String            @id @default(cuid())
+  usuarioId    String            @unique
+  equipeId     String
+  codigoAtleta String            @unique
+  idade        Int
+  esporte      String?
+  criadoEm     DateTime          @default(now())
+  atualizadoEm DateTime          @updatedAt
 
-  user        User              @relation(fields: [userId], references: [id])
-  team        Team              @relation(fields: [teamId], references: [id])
-  sessions    TrainingSession[]
+  usuario      Usuario           @relation(fields: [usuarioId], references: [id])
+  equipe       Equipe            @relation(fields: [equipeId], references: [id])
+  sessoes      SessaoTreino[]
 }
 
-model TrainingSession {
+model SessaoTreino {
   id                String           @id @default(cuid())
-  athleteId         String
-  sessionDate       DateTime
-  durationMin       Int
-  measurementMethod String
-  createdAt         DateTime         @default(now())
-  updatedAt         DateTime         @updatedAt
+  atletaId          String
+  dataSessao        DateTime
+  duracaoMin        Int
+  metodoMedicao     String
+  criadoEm          DateTime         @default(now())
+  atualizadoEm      DateTime         @updatedAt
 
-  athlete           AthleteProfile   @relation(fields: [athleteId], references: [id])
-  record            HydrationRecord?
-  result            HydrationResult?
+  atleta            PerfilAtleta     @relation(fields: [atletaId], references: [id])
+  registro          RegistroHidratacao?
+  resultado         ResultadoHidratacao?
 }
 
-model HydrationRecord {
+model RegistroHidratacao {
   id                String           @id @default(cuid())
-  sessionId         String           @unique
-  preWeightKg       Float
-  postWeightKg      Float
-  fluidIntakeLiters Float            @default(0)
-  urineVolumeLiters Float?
-  temperatureC      Float?
-  humidityPercent   Float?
-  symptoms          String?
-  createdAt         DateTime         @default(now())
-  updatedAt         DateTime         @updatedAt
+  sessaoId          String           @unique
+  pesoPreKg         Float
+  pesoPosKg         Float
+  liquidoIngeridoL  Float            @default(0)
+  volumeUrinaL      Float?
+  temperaturaC      Float?
+  umidadePercent    Float?
+  sintomas          String?
+  criadoEm          DateTime         @default(now())
+  atualizadoEm      DateTime         @updatedAt
 
-  session           TrainingSession  @relation(fields: [sessionId], references: [id])
+  sessao            SessaoTreino     @relation(fields: [sessaoId], references: [id])
 }
 
-model HydrationResult {
+model ResultadoHidratacao {
   id                  String           @id @default(cuid())
-  sessionId           String           @unique
-  sweatRateLitersHour Float
-  hydrationStatus     HydrationStatus
-  recommendation      String
-  createdAt           DateTime         @default(now())
-  updatedAt           DateTime         @updatedAt
+  sessaoId            String           @unique
+  taxaSuorLPorHora    Float
+  statusHidratacao    StatusHidratacao
+  recomendacao        String
+  criadoEm            DateTime         @default(now())
+  atualizadoEm        DateTime         @updatedAt
 
-  session             TrainingSession  @relation(fields: [sessionId], references: [id])
+  sessao              SessaoTreino     @relation(fields: [sessaoId], references: [id])
 }

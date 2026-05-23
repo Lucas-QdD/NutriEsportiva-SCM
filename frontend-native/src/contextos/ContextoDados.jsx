@@ -48,7 +48,7 @@ export const ProvedorDados = ({ children }) => {
   }, []);
 
   const deletarAtleta = useCallback((id) => {
-    setAtletas((anterior) => anterior.filter((item) => item.id !== id));
+    setAtletas((anterior) => anterior.filter((item) => String(item.id) !== String(id)));
   }, []);
 
   const obterAtletaPorId = useCallback(

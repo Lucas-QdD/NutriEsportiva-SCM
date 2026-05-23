@@ -1,14 +1,14 @@
 const prisma = require("../lib/prisma");
 
-async function listTeams(req, res) {
+async function listEquipes(req, res) {
   try {
-    const teams = await prisma.team.findMany({
+    const equipes = await prisma.equipe.findMany({
       orderBy: {
-        name: "asc",
+        nome: "asc",
       },
     });
 
-    return res.status(200).json(teams);
+    return res.status(200).json(equipes);
   } catch (error) {
     console.error("Erro ao listar equipes:", error);
 
@@ -18,36 +18,36 @@ async function listTeams(req, res) {
   }
 }
 
-async function createTeam(req, res) {
+async function createEquipe(req, res) {
   try {
-    const { name, code } = req.body;
+    const { nome, codigo } = req.body;
 
-    if (!name || !code) {
+    if (!nome || !codigo) {
       return res.status(400).json({
-        error: "Os campos name e code são obrigatórios",
+        error: "Os campos nome e codigo são obrigatórios",
       });
     }
 
-    const existingTeam = await prisma.team.findFirst({
+    const existingEquipe = await prisma.equipe.findFirst({
       where: {
-        OR: [{ name }, { code }],
+        OR: [{ nome }, { codigo }],
       },
     });
 
-    if (existingTeam) {
+    if (existingEquipe) {
       return res.status(409).json({
         error: "Já existe uma equipe com esse nome ou código",
       });
     }
 
-    const team = await prisma.team.create({
+    const equipe = await prisma.equipe.create({
       data: {
-        name,
-        code,
+        nome,
+        codigo,
       },
     });
 
-    return res.status(201).json(team);
+    return res.status(201).json(equipe);
   } catch (error) {
     console.error("Erro ao criar equipe:", error);
 
@@ -57,23 +57,23 @@ async function createTeam(req, res) {
   }
 }
 
-async function getTeamById(req, res) {
+async function getEquipeById(req, res) {
   try {
     const { id } = req.params;
 
-    const team = await prisma.team.findUnique({
+    const equipe = await prisma.equipe.findUnique({
       where: {
         id,
       },
     });
 
-    if (!team) {
+    if (!equipe) {
       return res.status(404).json({
         error: "Equipe não encontrada",
       });
     }
 
-    return res.status(200).json(team);
+    return res.status(200).json(equipe);
   } catch (error) {
     console.error("Erro ao buscar equipe:", error);
 
@@ -83,55 +83,55 @@ async function getTeamById(req, res) {
   }
 }
 
-async function updateTeam(req, res) {
+async function updateEquipe(req, res) {
   try {
     const { id } = req.params;
-    const { name, code } = req.body;
+    const { nome, codigo } = req.body;
 
-    if (!name || !code) {
+    if (!nome || !codigo) {
       return res.status(400).json({
-        error: "Os campos name e code são obrigatórios",
+        error: "Os campos nome e codigo são obrigatórios",
       });
     }
 
-    const team = await prisma.team.findUnique({
+    const equipe = await prisma.equipe.findUnique({
       where: {
         id,
       },
     });
 
-    if (!team) {
+    if (!equipe) {
       return res.status(404).json({
         error: "Equipe não encontrada",
       });
     }
 
-    const existingTeam = await prisma.team.findFirst({
+    const existingEquipe = await prisma.equipe.findFirst({
       where: {
-        OR: [{ name }, { code }],
+        OR: [{ nome }, { codigo }],
         NOT: {
           id,
         },
       },
     });
 
-    if (existingTeam) {
+    if (existingEquipe) {
       return res.status(409).json({
         error: "Já existe outra equipe com esse nome ou código",
       });
     }
 
-    const updatedTeam = await prisma.team.update({
+    const updatedEquipe = await prisma.equipe.update({
       where: {
         id,
       },
       data: {
-        name,
-        code,
+        nome,
+        codigo,
       },
     });
 
-    return res.status(200).json(updatedTeam);
+    return res.status(200).json(updatedEquipe);
   } catch (error) {
     console.error("Erro ao atualizar equipe:", error);
 
@@ -141,23 +141,23 @@ async function updateTeam(req, res) {
   }
 }
 
-async function deleteTeam(req, res) {
+async function deleteEquipe(req, res) {
   try {
     const { id } = req.params;
 
-    const team = await prisma.team.findUnique({
+    const equipe = await prisma.equipe.findUnique({
       where: {
         id,
       },
     });
 
-    if (!team) {
+    if (!equipe) {
       return res.status(404).json({
         error: "Equipe não encontrada",
       });
     }
 
-    await prisma.team.delete({
+    await prisma.equipe.delete({
       where: {
         id,
       },
@@ -176,9 +176,9 @@ async function deleteTeam(req, res) {
 }
 
 module.exports = {
-  listTeams,
-  createTeam,
-  getTeamById,
-  updateTeam,
-  deleteTeam,
+  listEquipes,
+  createEquipe,
+  getEquipeById,
+  updateEquipe,
+  deleteEquipe,
 };
