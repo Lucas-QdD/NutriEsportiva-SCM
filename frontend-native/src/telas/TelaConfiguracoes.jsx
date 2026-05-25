@@ -12,7 +12,10 @@ import { usarTema } from '../contextos/ContextoTema';
 
 const ROTULOSPAPEL = {
   NUTRICIONISTA: 'Nutricionista',
+  NUTRITIONIST: 'Nutricionista',
   ATLETA: 'Atleta',
+  ATHLETE: 'Atleta',
+  COACH: 'Técnico',
   TECNICO: 'Técnico',
 };
 
@@ -20,7 +23,8 @@ const TelaConfiguracoes = ({ navigation }) => {
   const { temaTemaEscuro, alternarTema } = usarTema();
   const { usuario, sair } = usarAutenticacao();
 
-  const papelUsuario = usuario?.papel || 'ATLETA';
+  const papelUsuario = usuario?.role || usuario?.papel || 'ATLETA';
+  const nomeUsuario = usuario?.name || nomeUsuario || 'Usuário';
 
   const tratarSaida = () => {
     sair();
@@ -202,12 +206,12 @@ const TelaConfiguracoes = ({ navigation }) => {
         <View style={estilos.cartaoPerfil}>
           <View style={estilos.avatar}>
             <Text style={estilos.textoAvatar}>
-              {obterIniciais(usuario?.nome)}
+              {obterIniciais(nomeUsuario)}
             </Text>
           </View>
           <View style={estilos.infoPerfil}>
             <Text style={estilos.nomePerfil}>
-              {usuario?.nome || 'Usuário'}
+              {nomeUsuario || 'Usuário'}
             </Text>
             <Text style={estilos.papelPerfil}>
               {ROTULOSPAPEL[papelUsuario] || 'Atleta'}

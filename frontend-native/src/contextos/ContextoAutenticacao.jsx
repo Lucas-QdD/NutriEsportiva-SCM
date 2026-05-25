@@ -20,18 +20,30 @@ export const ProvedorAutenticacao = ({ children }) => {
         return false;
       } 
 
-      const resposta = await fetch('http://192.168.100.103:3333/login', {
+      const resposta = await fetch('https://tired-crabs-matter.loca.lt/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           email: nomeUsuario,
-          senha: senha,
+          password: senha, // alterado de 'senha' para 'password' para bater com o backend
         }),
       });
 
-      const dados = await resposta.json();
+      // Captura a resposta como texto bruto primeiro para evitar o travamento do JSON Parse
+      const textoBruto = await resposta.text();
+      let dados;
+
+      try {
+        dados = JSON.parse(textoBruto);
+      } catch (e) {
+        // Se cair aqui, a resposta veio em formato HTML ou Texto Puro (Ex: Página de bloqueio do túnel ou erro 500 do Express)
+        setErro('Resposta inválida do servidor. Verifique o túnel no navegador do celular.');
+        setCarregando(false);
+        console.log('Conteúdo bruto recebido:', textoBruto);
+        return false;
+      }
 
       if (!resposta.ok) {
         setErro(dados.error || 'Erro no login');
@@ -39,23 +51,29 @@ export const ProvedorAutenticacao = ({ children }) => {
         return false;
       }
 
-      if (dados.usuario.papel !== tipoDeUsuario) {
-        const perfilCorreto = dados.usuario.papel === 'ATLETA' ? 'Atleta' : 'Nutricionista';
+      const usuarioLogado = dados.user || dados.usuario;
+      const papel = usuarioLogado.role || usuarioLogado.papel;
+
+      let tipoDeUsuarioValidado = tipoDeUsuario === 'NUTRICIONISTA' ? 'NUTRITIONIST' : 'ATHLETE';
+      if (tipoDeUsuario === 'ATLETA') tipoDeUsuarioValidado = 'ATHLETE';
+
+      if (papel !== tipoDeUsuarioValidado && papel !== tipoDeUsuario) {
+        const perfilCorreto = (papel === 'ATLETA' || papel === 'ATHLETE') ? 'Atleta' : 'Nutricionista';
         setErro(`Acesso negado. Esta conta é de um ${perfilCorreto}.`);
         setCarregando(false);
         return false;
       }
-      setUsuario(dados.usuario);
-      setTipoUsuario(dados.usuario.papel);
+      setUsuario(usuarioLogado);
+      setTipoUsuario(papel);
 
-      await AsyncStorage.setItem('usuario', JSON.stringify(dados.usuario));
-      await AsyncStorage.setItem('tipoUsuario', dados.usuario.papel);
+      await AsyncStorage.setItem('usuario', JSON.stringify(usuarioLogado));
+      await AsyncStorage.setItem('tipoUsuario', papel);
 
       setCarregando(false);
       return true;
 
     } catch (erro) {
-      setErro('Erro ao fazer login: ' + erro.message);
+      setErro('Erro ao conectar com o servidor: ' + erro.message);
       setCarregando(false);
       return false;
     }

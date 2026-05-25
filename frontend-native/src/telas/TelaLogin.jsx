@@ -38,14 +38,17 @@ const TelaLogin = () => {
     if (usuarioLogado) {
       // 2. Restrição de Segurança: Verifica se o papel no banco bate com a seleção do botão
       // Caso sua função entrar já retorne o objeto usuário, usamos ele; senão, validamos pelo estado global atualizado
-      const papelNoBanco = usuarioLogado?.papel; 
+      const papelNoBanco = usuarioLogado?.role || usuarioLogado?.papel; 
 
-      if (papelNoBanco && papelNoBanco !== dadosFormulario.tipoUsuario) {
+      let tipoValido = dadosFormulario.tipoUsuario === 'NUTRICIONISTA' ? 'NUTRITIONIST' : 'ATHLETE';
+      if (dadosFormulario.tipoUsuario === 'ATLETA') tipoValido = 'ATHLETE';
+
+      if (papelNoBanco && papelNoBanco !== tipoValido && papelNoBanco !== dadosFormulario.tipoUsuario) {
         // Se tentou entrar como Nutricionista sendo Atleta (ou vice-versa), barra o acesso!
         await sair(); 
         Alert.alert(
           'Acesso Negado', 
-          `Este usuário está cadastrado como ${papelNoBanco === 'ATLETA' ? 'Atleta' : 'Nutricionista'}. Selecione a opção correta para entrar.`
+          `Este usuário está cadastrado como ${(papelNoBanco === 'ATLETA' || papelNoBanco === 'ATHLETE') ? 'Atleta' : 'Nutricionista'}. Selecione a opção correta para entrar.`
         );
       }
     } else {

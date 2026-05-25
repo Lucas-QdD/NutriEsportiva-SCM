@@ -1,21 +1,23 @@
 const { Router } = require("express");
 
-const { listEquipes, 
-    createEquipe, 
-    getEquipeById, 
-    updateEquipe,
-    deleteEquipe,
-} = require("../controllers/equipeController");
+const { listTeams, 
+    createTeam, 
+    getTeamById, 
+    updateTeam,
+    deleteTeam,
+} = require("../controllers/teamController");
 
-const { createUsuario, 
-    listUsuarios,
-    getUsuarioById,
-    updateUsuario,
-    deleteUsuario,
-    loginUsuario,
-} = require("../controllers/usuarioController");
+const { createUser, 
+    listUsers,
+    getUserById,
+    updateUser,
+    deleteUser,
+    loginUser,
+} = require("../controllers/userController");
 
 const authMiddleware = require("../middlewares/authMiddleware");
+
+const hydrationController = require("../controllers/hydrationController");
 
 const router = Router();
 
@@ -32,22 +34,30 @@ router.get("/", (req, res) => {
 });
 
 // rota pública de login
-router.post("/login", loginUsuario);
+router.post("/login", loginUser);
 
 // rotas públicas de cadastro (por enquanto)
-router.post("/usuarios", createUsuario);
+router.post("/users", createUser);
 
-// rotas protegidas de usuarios
-router.get("/usuarios", authMiddleware, listUsuarios);
-router.get("/usuarios/:id", authMiddleware, getUsuarioById);
-router.put("/usuarios/:id", authMiddleware, updateUsuario);
-router.delete("/usuarios/:id", authMiddleware, deleteUsuario);
+// rotas protegidas de users
+router.get("/users", authMiddleware, listUsers);
+router.get("/users/:id", authMiddleware, getUserById);
+router.put("/users/:id", authMiddleware, updateUser);
+router.delete("/users/:id", authMiddleware, deleteUser);
 
-// rotas protegidas de equipes
-router.get("/equipes", authMiddleware, listEquipes);
-router.get("/equipes/:id", authMiddleware, getEquipeById);
-router.post("/equipes", authMiddleware, createEquipe);
-router.put("/equipes/:id", authMiddleware, updateEquipe);
-router.delete("/equipes/:id", authMiddleware, deleteEquipe);
+// rotas protegidas de teams
+router.get("/teams", authMiddleware, listTeams);
+router.get("/teams/:id", authMiddleware, getTeamById);
+router.post("/teams", authMiddleware, createTeam);
+router.put("/teams/:id", authMiddleware, updateTeam);
+router.delete("/teams/:id", authMiddleware, deleteTeam);
+
+// rotas do calculo da hidratação
+
+router.post(
+  "/hydration/calculate",
+  authMiddleware,
+  hydrationController.calcularHidratacao
+);
 
 module.exports = router;

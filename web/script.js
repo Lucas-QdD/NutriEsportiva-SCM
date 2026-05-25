@@ -4,15 +4,32 @@ const appState = {
     userType: null, // 'nutritionist' or 'athlete'
     currentPage: 'dashboard',
     theme: localStorage.getItem('theme') || 'light',
-    athletes: [
-        { id: 1, name: 'João Silva', dob: '2005-03-15', height: 175, weight: 70, sex: 'M', sweating: 'Alta', salt: 'Muita' },
-        { id: 2, name: 'Maria Santos', dob: '2006-07-22', height: 165, weight: 58, sex: 'F', sweating: 'Moderada', salt: 'Pouca' },
-        { id: 3, name: 'Lucas Costa', dob: '2004-11-08', height: 182, weight: 75, sex: 'M', sweating: 'Leve', salt: 'Nenhuma' },
-        { id: 4, name: 'Ana Paula', dob: '2005-05-12', height: 168, weight: 62, sex: 'F', sweating: 'Alta', salt: 'Muita' },
-        { id: 5, name: 'Lucca Rodrigues', dob: '2006-01-30', height: 180, weight: 72, sex: 'M', sweating: 'Moderada', salt: 'Pouca' },
-    ],
+    athletes: [], // Loaded from API
     athleteEvaluations: [], // Store evaluations for current logged-in athlete
     editingAthleteId: null,
+
+    async fetchAthletes() {
+        try {
+            const token = localStorage.getItem("token");
+            if (!token) return;
+            const res = await fetch("http://localhost:3333/users", {
+                headers: { "Authorization": `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const users = await res.json();
+                this.athletes = users.filter(u => u.role === 'ATHLETE' || u.role === 'ATLETA').map(u => ({
+                    id: u.id,
+                    name: u.name,
+                    email: u.email,
+                    // Fill mock data for layout purposes since backend might not have this yet
+                    dob: '2000-01-01', height: 170, weight: 70, sex: 'M', sweating: 'Normal', salt: 'Normal'
+                }));
+                render();
+            }
+        } catch (error) {
+            console.error("Erro ao buscar atletas:", error);
+        }
+    },
 
     navigate(page) {
         this.currentPage = page;
@@ -49,29 +66,87 @@ const appState = {
         this.editingAthleteId = null;
     },
 
-    addAthlete(data) {
-        const newAthlete = {
-            id: Math.max(...this.athletes.map(a => a.id), 0) + 1,
-            ...data
-        };
-        this.athletes.push(newAthlete);
-        this.closeAthleteForm();
-        render();
-    },
-
-    updateAthlete(id, data) {
-        const index = this.athletes.findIndex(a => a.id === id);
-        if (index !== -1) {
-            this.athletes[index] = { id, ...data };
-            this.closeAthleteForm();
-            render();
+    async addAthlete(data) {
+        try {
+            const token = localStorage.getItem("token");
+            if (!token) return;
+            const payload = {
+                name: data.name,
+                email: data.email || 'novoatleta_' + Date.now() + '@email.com',
+                password: 'password123',
+                role: 'ATHLETE',
+            };
+            const response = await fetch("http://localhost:3333/users", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                },
+                body: JSON.stringify(payload),
+            });
+            if (response.ok) {
+                this.closeAthleteForm();
+                await this.fetchAthletes();
+            } else {
+                const err = await response.json();
+                alert(err.error || "Erro ao adicionar atleta.");
+            }
+        } catch (error) {
+            console.error("Erro ao adicionar:", error);
+            alert("Erro ao conectar com a API.");
         }
     },
 
-    deleteAthlete(id) {
+    async updateAthlete(id, data) {
+        try {
+            const token = localStorage.getItem("token");
+            if (!token) return;
+            const existingAthlete = this.athletes.find(a => a.id === id);
+            const payload = {
+                name: data.name,
+                email: existingAthlete?.email || 'atleta_' + id + '@email.com',
+                role: 'ATHLETE',
+            };
+            const response = await fetch(`http://localhost:3333/users/${id}`, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                },
+                body: JSON.stringify(payload),
+            });
+            if (response.ok) {
+                this.closeAthleteForm();
+                await this.fetchAthletes();
+            } else {
+                const err = await response.json();
+                alert(err.error || "Erro ao atualizar atleta.");
+            }
+        } catch (error) {
+            console.error("Erro ao atualizar:", error);
+            alert("Erro ao conectar com a API.");
+        }
+    },
+
+    async deleteAthlete(id) {
         if (confirm('Tem certeza que deseja deletar este atleta?')) {
-            this.athletes = this.athletes.filter(a => a.id !== id);
-            render();
+            try {
+                const token = localStorage.getItem("token");
+                if (!token) return;
+                const response = await fetch(`http://localhost:3333/users/${id}`, {
+                    method: "DELETE",
+                    headers: { "Authorization": `Bearer ${token}` }
+                });
+                if (response.ok) {
+                    await this.fetchAthletes();
+                } else {
+                    const err = await response.json();
+                    alert(err.error || "Erro ao deletar atleta.");
+                }
+            } catch (error) {
+                console.error("Erro ao deletar:", error);
+                alert("Erro ao conectar com a API.");
+            }
         }
     },
 
@@ -116,6 +191,14 @@ const appState = {
                 alert(data.error || "Erro ao realizar login");
                 return;
             }
+            
+            const userRole = data.user.role === 'NUTRITIONIST' ? 'nutritionist' : 'athlete';
+            
+            if (userType !== userRole) {
+                const correctProfile = userRole === 'athlete' ? 'Atleta' : 'Nutricionista';
+                alert(`Acesso negado. O perfil escolhido foi ${userType === 'athlete' ? 'Atleta' : 'Nutricionista'}, mas a conta é de ${correctProfile}.`);
+                return;
+            }
 
             localStorage.setItem("token", data.token);
             localStorage.setItem("user", JSON.stringify(data.user));
@@ -125,6 +208,7 @@ const appState = {
             this.currentPage = "dashboard";
 
             render();
+            this.fetchAthletes();
         } catch (error) {
             console.error("Erro ao conectar com a API:", error);
             alert("Não foi possível conectar ao servidor.");
@@ -433,6 +517,20 @@ function applyTheme(theme) {
 document.addEventListener('DOMContentLoaded', () => {
     // Apply saved theme
     applyTheme(appState.theme);
+    
+    // Check if user is logged in
+    const token = localStorage.getItem('token');
+    const user = localStorage.getItem('user');
+    if (token && user) {
+        try {
+            appState.currentUser = JSON.parse(user);
+            appState.userType = appState.currentUser.role === 'NUTRITIONIST' ? 'nutritionist' : 'athlete';
+            appState.fetchAthletes();
+        } catch (e) {
+            console.error("Erro ao ler userInfo do cache", e);
+        }
+    }
+    
     render();
 });
 

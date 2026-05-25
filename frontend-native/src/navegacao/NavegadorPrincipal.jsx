@@ -23,7 +23,7 @@ import { usarTema } from '../contextos/ContextoTema';
 const Pilha = createStackNavigator();
 
 const LayoutComBarraLateral = ({ children, navigation, tipoUsuario }) => {
-  const ehNutricionista = tipoUsuario === 'NUTRICIONISTA';
+  const ehNutricionista = tipoUsuario === 'NUTRICIONISTA' || tipoUsuario === 'NUTRITIONIST';
   const { temaTemaEscuro } = usarTema();
   const { width } = useWindowDimensions();
   const ehDispositivoMovel = width < 768;
@@ -82,7 +82,7 @@ const LayoutComBarraLateral = ({ children, navigation, tipoUsuario }) => {
 
             {mostrarTextos && (
               <>
-                {ehDispositivoMovel && <Text style={[estilos.tituloBarraLateral, { color: '#ffffff', marginTop: 8 }]}>SAO</Text>}
+                {ehDispositivoMovel && <Text style={[estilos.tituloBarraLateral, { color: '#ffffff', marginTop: 8 }]}>NESC</Text>}
                 <Text style={estilos.subtituloBarraLateral}>NutriEsportiva</Text>
                 <Text style={estilos.subtituloBarraLateral}>São Camilo</Text>
               </>
@@ -194,7 +194,7 @@ export const NavegadorPrincipal = () => {
   return (
     <NavigationContainer>
       {autenticado ? (
-        <NavegadorApp tipoUsuario={usuario?.papel} />
+        <NavegadorApp tipoUsuario={usuario?.role || usuario?.papel} />
       ) : (
         <Pilha.Navigator screenOptions={{ headerShown: false }}>
           <Pilha.Screen name="Entrar" component={TelaLogin} />
