@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import { api } from '../services/api';
 
 const ContextoDados = createContext();
 
@@ -19,67 +20,144 @@ const atletaVazio = {
 
 const avaliacaoVazia = {
   data: '',
-  peso: '',
+  durationMin: '',
+  preWeightKg: '',
+  postWeightKg: '',
+  fluidIntakeLiters: '0',
+  urineVolumeLiters: '0',
   suor: '',
   sal: '',
-  hidracao: '',
   sintomas: '',
-  diureticos: '',
 };
 
 export const ProvedorDados = ({ children }) => {
   const [atletas, setAtletas] = useState([]);
   const [avaliacoes, setAvaliacoes] = useState([]);
 
-  // Funções de atleta
-  const adicionarAtleta = useCallback(
-    (atleta) => {
-      const novoAtleta = { id: Date.now(), ...atleta };
-      setAtletas((anterior) => [...anterior, novoAtleta]);
-      return novoAtleta;
-    },
-    []
-  );
+  const carregarDadosIniciais = useCallback(async () => {
+    try {
+      const dadosAtletas = await api.get('/athletes');
+      setAtletas(dadosAtletas);
 
-  const editarAtleta = useCallback((id, atleta) => {
+      const dadosAvaliacoes = await api.get('/training-sessions');
+      setAvaliacoes(dadosAvaliacoes);
+    } catch (error) {
+      console.log('Servidor offline ou rotas ainda indisponiveis. Usando dados em memoria local.');
+    }
+  }, []);
+
+  useEffect(() => {
+    carregarDadosIniciais();
+  }, [carregarDadosIniciais]);
+
+  const adicionarAtleta = useCallback(async (atleta) => {
+    const novoAtletaLocal = { id: String(Date.now()), ...atleta };
+    setAtletas((anterior) => [...anterior, novoAtletaLocal]);
+
+    try {
+      const atletaServidor = await api.post('/athletes', atleta);
+      setAtletas((anterior) =>
+        anterior.map((item) => (item.id === novoAtletaLocal.id ? atletaServidor : item))
+      );
+      return atletaServidor;
+    } catch (error) {
+      console.error('Erro ao sincronizar atleta com o servidor:', error.message);
+    }
+
+    return novoAtletaLocal;
+  }, []);
+
+  const editarAtleta = useCallback(async (id, atleta) => {
     setAtletas((anterior) =>
       anterior.map((item) => (item.id === id ? { ...item, ...atleta } : item))
     );
+
+    try {
+      await api.put(`/athletes/${id}`, atleta);
+    } catch (error) {
+      console.error('Erro ao editar atleta no servidor:', error.message);
+    }
   }, []);
 
-  const deletarAtleta = useCallback((id) => {
-    setAtletas((anterior) => anterior.filter((item) => item.id !== id));
+  const deletarAtleta = useCallback(async (id) => {
+    setAtletas((anterior) => anterior.filter((item) => String(item.id) !== String(id)));
+
+    try {
+      await api.delete(`/athletes/${id}`);
+    } catch (error) {
+      console.error('Erro ao deletar atleta no servidor:', error.message);
+    }
   }, []);
 
   const obterAtletaPorId = useCallback(
-    (id) => {
-      return atletas.find((item) => item.id === id);
-    },
+    (id) => atletas.find((item) => item.id === id),
     [atletas]
   );
 
-  // Funções de avaliação
-  const adicionarAvaliacao = useCallback(
-    (avaliacao, nomeUsuario) => {
-      const novaAvaliacao = {
-        id: Date.now(),
-        nome: nomeUsuario || 'Usuário',
-        ...avaliacao,
-      };
-      setAvaliacoes((anterior) => [novaAvaliacao, ...anterior]);
-      return novaAvaliacao;
-    },
-    []
-  );
+  const adicionarAvaliacao = useCallback(async (avaliacao, nomeUsuario) => {
+    const avaliacaoFormatada = {
+      id: String(Date.now()),
+      atletaId:
+        avaliacao.atletaId ||
+        (atletas.find((a) => a.nome === avaliacao.atletaNome || a.nome === avaliacao.nome)?.id ||
+          'geral'),
+      atletaNome: avaliacao.atletaNome || avaliacao.nome || 'Geral',
+      data: avaliacao.data || new Date().toLocaleDateString('pt-BR'),
+      durationMin: parseInt(avaliacao.durationMin, 10) || 0,
+      preWeightKg: parseFloat(avaliacao.preWeightKg) || 0,
+      postWeightKg: parseFloat(avaliacao.postWeightKg) || 0,
+      fluidIntakeLiters: parseFloat(avaliacao.fluidIntakeLiters) || 0,
+      urineVolumeLiters: parseFloat(avaliacao.urineVolumeLiters) || 0,
+      suor: avaliacao.suor || '',
+      sal: avaliacao.sal || '',
+      sintomas: avaliacao.sintomas || '',
+      sweatRate: parseFloat(avaliacao.sweatRate) || 0,
+      statusHidratacao: avaliacao.statusHidratacao || 'Nao calculado',
+      recommendation: avaliacao.recomendacao || avaliacao.recommendation || '',
+      nutricionistaResponsavel: nomeUsuario || 'Autoavaliacao',
+    };
+
+    setAvaliacoes((anterior) => [avaliacaoFormatada, ...anterior]);
+
+    try {
+      await api.post('/training-sessions', avaliacaoFormatada);
+    } catch (error) {
+      console.log('Modo offline: registro mantido apenas localmente na sessao atual.');
+    }
+
+    return avaliacaoFormatada;
+  }, [atletas]);
 
   const obterAvaliacoesPorUsuario = useCallback(
-    (nomeUsuario) => {
-      return avaliacoes.filter((item) => item.nome === nomeUsuario);
-    },
+    (nomeUsuario) =>
+      avaliacoes.filter(
+        (item) => item.atletaNome === nomeUsuario || item.nutricionistaResponsavel === nomeUsuario
+      ),
     [avaliacoes]
   );
 
-  // Busca
+  const editarAvaliacao = useCallback(async (id, avaliacaoAtualizada) => {
+    setAvaliacoes((anterior) =>
+      anterior.map((item) => (item.id === id ? { ...item, ...avaliacaoAtualizada } : item))
+    );
+
+    try {
+      await api.put(`/training-sessions/${id}`, avaliacaoAtualizada);
+    } catch (error) {
+      console.error('Erro ao editar avaliacao no servidor:', error.message);
+    }
+  }, []);
+
+  const deletarAvaliacao = useCallback(async (id) => {
+    setAvaliacoes((anterior) => anterior.filter((item) => String(item.id) !== String(id)));
+
+    try {
+      await api.delete(`/training-sessions/${id}`);
+    } catch (error) {
+      console.error('Erro ao deletar avaliacao no servidor:', error.message);
+    }
+  }, []);
+
   const pesquisarAtletas = useCallback(
     (consulta) => {
       if (!consulta) return atletas;
@@ -101,6 +179,8 @@ export const ProvedorDados = ({ children }) => {
         obterAtletaPorId,
         adicionarAvaliacao,
         obterAvaliacoesPorUsuario,
+        editarAvaliacao,
+        deletarAvaliacao,
         pesquisarAtletas,
         atletaVazio,
         avaliacaoVazia,

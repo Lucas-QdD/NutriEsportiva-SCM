@@ -27,12 +27,6 @@ router.get("/", (req, res) => {
   });
 });
 
-router.get("/", (req, res) => {
-  return res.json({
-    message: "SweatApp API funcionando",
-  });
-});
-
 // rota pública de login
 router.post("/login", loginUser);
 
