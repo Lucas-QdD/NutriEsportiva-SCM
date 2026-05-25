@@ -18,6 +18,8 @@ const ROLES = [
   { value: 'COACH', label: 'Treinador' },
 ];
 
+const ROLE_VALUES = ROLES.map((role) => role.value);
+
 const TelaCadastro = ({ navigation }) => {
   const { temaTemaEscuro } = usarTema();
   const [form, setForm] = useState({
@@ -27,43 +29,86 @@ const TelaCadastro = ({ navigation }) => {
     role: 'ATHLETE',
   });
   const [carregando, setCarregando] = useState(false);
+  const [mensagemSucesso, setMensagemSucesso] = useState('');
+  const [mensagemErro, setMensagemErro] = useState('');
 
   const atualizarCampo = (campo, valor) => {
+    setMensagemErro('');
+    setMensagemSucesso('');
     setForm((anterior) => ({ ...anterior, [campo]: valor }));
   };
 
+  const obterMensagemErro = (error) => {
+    const mensagemApi = error?.message || '';
+
+    if (error?.status === 409 || mensagemApi.toLowerCase().includes('email')) {
+      return 'Este email ja esta em uso. Tente entrar ou cadastre outro email.';
+    }
+
+    if (error?.status === 400 && mensagemApi.toLowerCase().includes('role')) {
+      return 'Perfil invalido. Selecione Atleta, Nutricionista ou Treinador.';
+    }
+
+    if (error?.status === 400) {
+      return 'Confira os campos obrigatorios e tente novamente.';
+    }
+
+    if (
+      mensagemApi.toLowerCase().includes('network') ||
+      mensagemApi.toLowerCase().includes('failed to fetch') ||
+      mensagemApi.toLowerCase().includes('servidor') ||
+      !error?.status
+    ) {
+      return 'Nao foi possivel conectar com a API. Confira se o backend esta rodando em http://localhost:3333.';
+    }
+
+    return mensagemApi || 'Nao foi possivel criar a conta. Tente novamente.';
+  };
+
   const cadastrar = async () => {
-    if (!form.name || !form.email || !form.password || !form.role) {
-      Alert.alert('Atencao', 'Preencha todos os campos.');
+    const payload = {
+      name: form.name.trim(),
+      email: form.email.trim(),
+      password: form.password,
+      role: form.role,
+    };
+
+    if (!payload.name || !payload.email || !payload.password || !payload.role) {
+      const mensagem = 'Preencha nome, email, senha e perfil para continuar.';
+      setMensagemErro(mensagem);
+      Alert.alert('Campos obrigatorios', mensagem);
+      return;
+    }
+
+    if (!ROLE_VALUES.includes(payload.role)) {
+      const mensagem = 'Perfil invalido. Selecione Atleta, Nutricionista ou Treinador.';
+      setMensagemErro(mensagem);
+      Alert.alert('Perfil invalido', mensagem);
       return;
     }
 
     setCarregando(true);
+    setMensagemErro('');
+    setMensagemSucesso('');
 
     try {
-      const payload = {
-        name: form.name.trim(),
-        email: form.email.trim(),
-        password: form.password,
-        role: form.role,
-      };
+      await api.post('/users', payload);
 
-      console.log('[Cadastro] Payload enviado para POST /users:', payload);
-
-      const resposta = await api.post('/users', payload);
-
-      console.log('[Cadastro] Resposta da API:', resposta);
-
-      Alert.alert('Sucesso', 'Conta criada. Agora faca login.', [
-        { text: 'OK', onPress: () => navigation.goBack() },
+      const mensagem = 'Conta criada com sucesso. Agora voce ja pode fazer login.';
+      setMensagemSucesso(mensagem);
+      Alert.alert('Cadastro realizado', mensagem, [
+        { text: 'Continuar cadastrando', style: 'cancel' },
+        { text: 'Voltar para login', onPress: () => navigation.goBack() },
       ]);
     } catch (error) {
-      console.log('[Cadastro] Erro retornado pela API:', {
+      const mensagem = obterMensagemErro(error);
+      setMensagemErro(mensagem);
+      console.warn('[Cadastro] Erro retornado pela API:', {
         message: error.message,
         status: error.status,
         data: error.data,
       });
-      Alert.alert('Erro', error.message || 'Nao foi possivel criar a conta.');
+      Alert.alert('Nao foi possivel cadastrar', mensagem);
     } finally {
       setCarregando(false);
     }
@@ -147,6 +192,30 @@ const TelaCadastro = ({ navigation }) => {
     textoRoleAtivo: {
       color: cores.vermelhoPadrao,
     },
+    caixaMensagem: {
+      borderRadius: 10,
+      padding: 12,
+    },
+    caixaSucesso: {
+      backgroundColor: temaTemaEscuro ? '#064e3b' : '#dcfce7',
+      borderColor: '#16a34a',
+      borderWidth: 1,
+    },
+    caixaErro: {
+      backgroundColor: temaTemaEscuro ? '#450a0a' : '#fee2e2',
+      borderColor: '#dc2626',
+      borderWidth: 1,
+    },
+    textoMensagem: {
+      fontSize: 14,
+      fontWeight: '600',
+    },
+    textoSucesso: {
+      color: temaTemaEscuro ? '#bbf7d0' : '#166534',
+    },
+    textoErro: {
+      color: temaTemaEscuro ? '#fecaca' : '#991b1b',
+    },
     botaoCadastrar: {
       backgroundColor: cores.vermelhoPadrao,
       borderRadius: 10,
@@ -174,6 +243,22 @@ const TelaCadastro = ({ navigation }) => {
     <ScrollView style={estilos.conteiner} contentContainerStyle={estilos.conteudo}>
       <View style={estilos.cartao}>
         <Text style={estilos.titulo}>Criar conta</Text>
+
+        {mensagemSucesso ? (
+          <View style={[estilos.caixaMensagem, estilos.caixaSucesso]}>
+            <Text style={[estilos.textoMensagem, estilos.textoSucesso]}>
+              {mensagemSucesso}
+            </Text>
+          </View>
+        ) : null}
+
+        {mensagemErro ? (
+          <View style={[estilos.caixaMensagem, estilos.caixaErro]}>
+            <Text style={[estilos.textoMensagem, estilos.textoErro]}>
+              {mensagemErro}
+            </Text>
+          </View>
+        ) : null}
 
         <Text style={estilos.rotulo}>Nome</Text>
         <TextInput

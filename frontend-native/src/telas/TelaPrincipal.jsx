@@ -12,7 +12,7 @@ import { usarTema } from '../contextos/ContextoTema';
 
 const TelaPrincipal = ({ navigation }) => {
   const { atletas, avaliacoes } = usarDados();
-  const { usuario } = usarAutenticacao();
+  const { usuario, sair } = usarAutenticacao();
   const { temaTemaEscuro } = usarTema();
 
   // Estado para controlar qual atleta está selecionado no gráfico (Filtro do Nutricionista)
@@ -21,6 +21,12 @@ const TelaPrincipal = ({ navigation }) => {
   const papelUser = usuario?.role;
   const ehNutricionista = papelUser === 'NUTRITIONIST' || papelUser === 'COACH';
   const ehAtleta = papelUser === 'ATHLETE';
+  const tituloPainel =
+    papelUser === 'ATHLETE'
+      ? 'Meu Painel de Atleta'
+      : papelUser === 'COACH'
+        ? 'Painel do Treinador'
+        : 'Painel do Nutricionista';
 
   const avaliacoesFiltradas = ehNutricionista
     ? avaliacoes
@@ -57,7 +63,10 @@ const TelaPrincipal = ({ navigation }) => {
   const estilos = StyleSheet.create({
     conteiner: { flex: 1, backgroundColor: cores.fundoApp },
     cabecalho: { backgroundColor: cores.fundoCabecalho, paddingVertical: 20, paddingHorizontal: 30, borderBottomWidth: 1, borderBottomColor: cores.bordaCabecalho, shadowColor: '#000000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: temaTemaEscuro ? 0.2 : 0.05, shadowRadius: 4, elevation: 2 },
+    cabecalhoLinha: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 },
     tituloCabecalho: { fontSize: 24, color: cores.textoPrincipal, fontWeight: 'bold' },
+    botaoSair: { backgroundColor: '#dc2626', paddingVertical: 9, paddingHorizontal: 16, borderRadius: 8, alignItems: 'center' },
+    textoBotaoSair: { color: '#ffffff', fontSize: 14, fontWeight: '700' },
     conteudo: { flex: 1, padding: 30 },
     grelhaEstatisticas: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20, gap: 16 },
     cartaoEstatistica: { flex: 1, backgroundColor: cores.vermelhoPadrao, borderRadius: 12, padding: 20, alignItems: 'center', justifyContent: 'center', shadowColor: '#000000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 4 },
@@ -96,9 +105,12 @@ const TelaPrincipal = ({ navigation }) => {
     <ScrollView style={estilos.conteiner}>
       {/* Cabeçalho */}
       <View style={estilos.cabecalho}>
-        <Text style={estilos.tituloCabecalho}>
-          {ehNutricionista ? 'Painel do Nutricionista' : 'Meu Painel de Atleta'}
-        </Text>
+        <View style={estilos.cabecalhoLinha}>
+          <Text style={estilos.tituloCabecalho}>{tituloPainel}</Text>
+          <TouchableOpacity style={estilos.botaoSair} onPress={sair}>
+            <Text style={estilos.textoBotaoSair}>Sair</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <View style={estilos.conteudo}>

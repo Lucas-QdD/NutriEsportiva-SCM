@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Em celular fisico via Expo, troque localhost pelo IP da maquina na mesma rede.
 export const API_BASE_URL = 'http://localhost:3333';
+const DEBUG_API = false;
 
 export async function getStoredToken() {
   return AsyncStorage.getItem('token');
@@ -19,12 +20,14 @@ async function request(path, options = {}) {
     headers.Authorization = `Bearer ${token}`;
   }
 
-  console.log('[API] Request', {
-    method: options.method || 'GET',
-    url,
-    headers,
-    body: options.body ? JSON.parse(options.body) : undefined,
-  });
+  if (DEBUG_API) {
+    console.log('[API] Request', {
+      method: options.method || 'GET',
+      url,
+      headers,
+      body: options.body ? JSON.parse(options.body) : undefined,
+    });
+  }
 
   const response = await fetch(url, {
     ...options,
@@ -42,18 +45,20 @@ async function request(path, options = {}) {
     }
   }
 
-  console.log('[API] Response', {
-    url,
-    status: response.status,
-    ok: response.ok,
-    data,
-  });
+  if (DEBUG_API) {
+    console.log('[API] Response', {
+      url,
+      status: response.status,
+      ok: response.ok,
+      data,
+    });
+  }
 
   if (!response.ok) {
     const error = new Error(data?.error || 'Erro na comunicacao com a API');
     error.status = response.status;
     error.data = data;
-    console.log('[API] Error', {
+    console.warn('[API] Error', {
       url,
       status: response.status,
       data,
