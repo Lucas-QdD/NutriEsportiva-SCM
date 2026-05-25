@@ -1,8 +1,7 @@
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import { api } from '../services/api';
 
 const ContextoDados = createContext();
-
-const API_URL = 'https://tired-crabs-matter.loca.lt';
 
 const atletaVazio = {
   nome: '',
@@ -35,22 +34,15 @@ export const ProvedorDados = ({ children }) => {
   const [atletas, setAtletas] = useState([]);
   const [avaliacoes, setAvaliacoes] = useState([]);
 
-  // --- CARREGAMENTO INICIAL (API) ---
   const carregarDadosIniciais = useCallback(async () => {
     try {
-      const resAtletas = await fetch(`${API_URL}/athletes`);
-      if (resAtletas.ok) {
-        const dadosAtletas = await resAtletas.json();
-        setAtletas(dadosAtletas);
-      }
+      const dadosAtletas = await api.get('/athletes');
+      setAtletas(dadosAtletas);
 
-      const resAvaliacoes = await fetch(`${API_URL}/training-sessions`);
-      if (resAvaliacoes.ok) {
-        const dadosAvaliacoes = await resAvaliacoes.json();
-        setAvaliacoes(dadosAvaliacoes);
-      }
+      const dadosAvaliacoes = await api.get('/training-sessions');
+      setAvaliacoes(dadosAvaliacoes);
     } catch (error) {
-      console.log("Servidor offline. Usando apenas dados em memória local por enquanto.");
+      console.log('Servidor offline ou rotas ainda indisponiveis. Usando dados em memoria local.');
     }
   }, []);
 
@@ -58,28 +50,18 @@ export const ProvedorDados = ({ children }) => {
     carregarDadosIniciais();
   }, [carregarDadosIniciais]);
 
-
-  // --- FUNÇÕES DE ATLETA ---
   const adicionarAtleta = useCallback(async (atleta) => {
     const novoAtletaLocal = { id: String(Date.now()), ...atleta };
     setAtletas((anterior) => [...anterior, novoAtletaLocal]);
 
     try {
-      const resposta = await fetch(`${API_URL}/athletes`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(atleta),
-      });
-      
-      if (resposta.ok) {
-        const atletaServidor = await resposta.json();
-        setAtletas((anterior) => 
-          anterior.map(item => item.id === novoAtletaLocal.id ? atletaServidor : item)
-        );
-        return atletaServidor;
-      }
+      const atletaServidor = await api.post('/athletes', atleta);
+      setAtletas((anterior) =>
+        anterior.map((item) => (item.id === novoAtletaLocal.id ? atletaServidor : item))
+      );
+      return atletaServidor;
     } catch (error) {
-      console.error("Erro ao sincronizar atleta com o servidor:", error.message);
+      console.error('Erro ao sincronizar atleta com o servidor:', error.message);
     }
 
     return novoAtletaLocal;
@@ -91,13 +73,9 @@ export const ProvedorDados = ({ children }) => {
     );
 
     try {
-      await fetch(`${API_URL}/athletes/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(atleta),
-      });
+      await api.put(`/athletes/${id}`, atleta);
     } catch (error) {
-      console.error("Erro ao editar atleta no servidor:", error.message);
+      console.error('Erro ao editar atleta no servidor:', error.message);
     }
   }, []);
 
@@ -105,27 +83,27 @@ export const ProvedorDados = ({ children }) => {
     setAtletas((anterior) => anterior.filter((item) => String(item.id) !== String(id)));
 
     try {
-      await fetch(`${API_URL}/athletes/${id}`, {
-        method: 'DELETE',
-      });
+      await api.delete(`/athletes/${id}`);
     } catch (error) {
-      console.error("Erro ao deletar atleta no servidor:", error.message);
+      console.error('Erro ao deletar atleta no servidor:', error.message);
     }
   }, []);
 
-  const obterAtletaPorId = useCallback((id) => {
-    return atletas.find((item) => item.id === id);
-  }, [atletas]);
+  const obterAtletaPorId = useCallback(
+    (id) => atletas.find((item) => item.id === id),
+    [atletas]
+  );
 
-
-  // --- FUNÇÕES DE AVALIAÇÃO ---
   const adicionarAvaliacao = useCallback(async (avaliacao, nomeUsuario) => {
     const avaliacaoFormatada = {
-      id: String(Date.now()), 
-      atletaId: avaliacao.atletaId || (atletas.find(a => a.nome === avaliacao.atletaNome || a.nome === avaliacao.nome)?.id || 'geral'),
+      id: String(Date.now()),
+      atletaId:
+        avaliacao.atletaId ||
+        (atletas.find((a) => a.nome === avaliacao.atletaNome || a.nome === avaliacao.nome)?.id ||
+          'geral'),
       atletaNome: avaliacao.atletaNome || avaliacao.nome || 'Geral',
       data: avaliacao.data || new Date().toLocaleDateString('pt-BR'),
-      durationMin: parseInt(avaliacao.durationMin) || 0,
+      durationMin: parseInt(avaliacao.durationMin, 10) || 0,
       preWeightKg: parseFloat(avaliacao.preWeightKg) || 0,
       postWeightKg: parseFloat(avaliacao.postWeightKg) || 0,
       fluidIntakeLiters: parseFloat(avaliacao.fluidIntakeLiters) || 0,
@@ -134,72 +112,61 @@ export const ProvedorDados = ({ children }) => {
       sal: avaliacao.sal || '',
       sintomas: avaliacao.sintomas || '',
       sweatRate: parseFloat(avaliacao.sweatRate) || 0,
-      statusHidratacao: avaliacao.statusHidratacao || 'Não calculado',
+      statusHidratacao: avaliacao.statusHidratacao || 'Nao calculado',
       recommendation: avaliacao.recomendacao || avaliacao.recommendation || '',
-      nutricionistaResponsavel: nomeUsuario || 'Autoavaliação'
+      nutricionistaResponsavel: nomeUsuario || 'Autoavaliacao',
     };
 
     setAvaliacoes((anterior) => [avaliacaoFormatada, ...anterior]);
 
     try {
-      const resposta = await fetch(`${API_URL}/training-sessions`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(avaliacaoFormatada), 
-      });
-
-      if (!resposta.ok) {
-        console.warn('O servidor rejeitou o payload recebido, mas os dados estão mantidos na memória do app.');
-      }
+      await api.post('/training-sessions', avaliacaoFormatada);
     } catch (error) {
-      console.log("Modo offline: Registro mantido apenas localmente na sessão atual.");
+      console.log('Modo offline: registro mantido apenas localmente na sessao atual.');
     }
 
     return avaliacaoFormatada;
   }, [atletas]);
 
-  const obterAvaliacoesPorUsuario = useCallback((nomeUsuario) => {
-    return avaliacoes.filter(
-      (item) => item.atletaNome === nomeUsuario || item.nutricionistaResponsavel === nomeUsuario
-    );
-  }, [avaliacoes]);
+  const obterAvaliacoesPorUsuario = useCallback(
+    (nomeUsuario) =>
+      avaliacoes.filter(
+        (item) => item.atletaNome === nomeUsuario || item.nutricionistaResponsavel === nomeUsuario
+      ),
+    [avaliacoes]
+  );
 
-  // CORRIGIDO: Agora sincronizando também com a sua API em segundo plano
   const editarAvaliacao = useCallback(async (id, avaliacaoAtualizada) => {
     setAvaliacoes((anterior) =>
       anterior.map((item) => (item.id === id ? { ...item, ...avaliacaoAtualizada } : item))
     );
 
     try {
-      await fetch(`${API_URL}/training-sessions/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(avaliacaoAtualizada),
-      });
+      await api.put(`/training-sessions/${id}`, avaliacaoAtualizada);
     } catch (error) {
-      console.error("Erro ao editar avaliação no servidor:", error.message);
+      console.error('Erro ao editar avaliacao no servidor:', error.message);
     }
   }, []);
 
-  // CORRIGIDO: Agora sincronizando também com a sua API em segundo plano
   const deletarAvaliacao = useCallback(async (id) => {
     setAvaliacoes((anterior) => anterior.filter((item) => String(item.id) !== String(id)));
 
     try {
-      await fetch(`${API_URL}/training-sessions/${id}`, {
-        method: 'DELETE',
-      });
+      await api.delete(`/training-sessions/${id}`);
     } catch (error) {
-      console.error("Erro ao deletar avaliação no servidor:", error.message);
+      console.error('Erro ao deletar avaliacao no servidor:', error.message);
     }
   }, []);
 
-  const pesquisarAtletas = useCallback((consulta) => {
-    if (!consulta) return atletas;
-    return atletas.filter((atleta) =>
-      atleta.nome.toLowerCase().includes(consulta.toLowerCase())
-    );
-  }, [atletas]);
+  const pesquisarAtletas = useCallback(
+    (consulta) => {
+      if (!consulta) return atletas;
+      return atletas.filter((atleta) =>
+        atleta.nome.toLowerCase().includes(consulta.toLowerCase())
+      );
+    },
+    [atletas]
+  );
 
   return (
     <ContextoDados.Provider
@@ -212,8 +179,8 @@ export const ProvedorDados = ({ children }) => {
         obterAtletaPorId,
         adicionarAvaliacao,
         obterAvaliacoesPorUsuario,
-        editarAvaliacao, // <-- ADICIONADO AQUI NO PROVIDER
-        deletarAvaliacao, // <-- ADICIONADO AQUI NO PROVIDER
+        editarAvaliacao,
+        deletarAvaliacao,
         pesquisarAtletas,
         atletaVazio,
         avaliacaoVazia,

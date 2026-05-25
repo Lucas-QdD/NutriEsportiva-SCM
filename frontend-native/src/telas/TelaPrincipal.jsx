@@ -18,9 +18,9 @@ const TelaPrincipal = ({ navigation }) => {
   // Estado para controlar qual atleta está selecionado no gráfico (Filtro do Nutricionista)
   const [atletaSelecionadoId, setAtletaSelecionadoId] = useState(atletas[0]?.id || null);
 
-  const papelUser = usuario?.role || usuario?.papel;
-  const ehNutricionista = papelUser === 'NUTRICIONISTA' || papelUser === 'NUTRITIONIST';
-  const ehAtleta = papelUser === 'ATLETA' || papelUser === 'ATHLETE';
+  const papelUser = usuario?.role;
+  const ehNutricionista = papelUser === 'NUTRITIONIST' || papelUser === 'COACH';
+  const ehAtleta = papelUser === 'ATHLETE';
 
   const avaliacoesFiltradas = ehNutricionista
     ? avaliacoes

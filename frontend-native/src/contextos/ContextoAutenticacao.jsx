@@ -1,91 +1,96 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { api } from '../services/api';
 
 const ContextoAutenticacao = createContext();
 
+const ROLES = ['ATHLETE', 'NUTRITIONIST', 'COACH'];
+
 export const ProvedorAutenticacao = ({ children }) => {
   const [usuario, setUsuario] = useState(null);
-  const [tipoUsuario, setTipoUsuario] = useState('NUTRICIONISTA');
+  const [token, setToken] = useState(null);
+  const [tipoUsuario, setTipoUsuario] = useState(null);
   const [carregando, setCarregando] = useState(false);
+  const [restaurando, setRestaurando] = useState(true);
   const [erro, setErro] = useState('');
 
-  const entrar = useCallback(async (nomeUsuario, senha, tipoDeUsuario) => {
+  useEffect(() => {
+    async function restaurarSessao() {
+      try {
+        const [usuarioSalvo, tokenSalvo, roleSalva] = await Promise.all([
+          AsyncStorage.getItem('user'),
+          AsyncStorage.getItem('token'),
+          AsyncStorage.getItem('tipoUsuario'),
+        ]);
+
+        if (usuarioSalvo && tokenSalvo) {
+          const user = JSON.parse(usuarioSalvo);
+          setUsuario(user);
+          setToken(tokenSalvo);
+          setTipoUsuario(user.role || roleSalva || null);
+        }
+      } catch (error) {
+        await AsyncStorage.multiRemove(['user', 'usuario', 'token', 'tipoUsuario']);
+        setErro('Nao foi possivel restaurar a sessao.');
+      } finally {
+        setRestaurando(false);
+      }
+    }
+
+    restaurarSessao();
+  }, []);
+
+  const entrar = useCallback(async (email, password, roleSelecionada) => {
     setCarregando(true);
     setErro('');
 
     try {
-      if (!nomeUsuario || !senha || !tipoDeUsuario) {
+      if (!email || !password || !roleSelecionada) {
         setErro('Preencha todos os campos do login.');
-        setCarregando(false);
-        return false;
-      } 
-
-      const resposta = await fetch('https://tired-crabs-matter.loca.lt/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: nomeUsuario,
-          password: senha, // alterado de 'senha' para 'password' para bater com o backend
-        }),
-      });
-
-      // Captura a resposta como texto bruto primeiro para evitar o travamento do JSON Parse
-      const textoBruto = await resposta.text();
-      let dados;
-
-      try {
-        dados = JSON.parse(textoBruto);
-      } catch (e) {
-        // Se cair aqui, a resposta veio em formato HTML ou Texto Puro (Ex: Página de bloqueio do túnel ou erro 500 do Express)
-        setErro('Resposta inválida do servidor. Verifique o túnel no navegador do celular.');
-        setCarregando(false);
-        console.log('Conteúdo bruto recebido:', textoBruto);
         return false;
       }
 
-      if (!resposta.ok) {
-        setErro(dados.error || 'Erro no login');
-        setCarregando(false);
+      const dados = await api.post('/login', { email, password });
+      const user = dados.user;
+      const jwtToken = dados.token;
+
+      if (!user || !jwtToken || !ROLES.includes(user.role)) {
+        setErro('Resposta invalida do servidor.');
         return false;
       }
 
-      const usuarioLogado = dados.user || dados.usuario;
-      const papel = usuarioLogado.role || usuarioLogado.papel;
-
-      let tipoDeUsuarioValidado = tipoDeUsuario === 'NUTRICIONISTA' ? 'NUTRITIONIST' : 'ATHLETE';
-      if (tipoDeUsuario === 'ATLETA') tipoDeUsuarioValidado = 'ATHLETE';
-
-      if (papel !== tipoDeUsuarioValidado && papel !== tipoDeUsuario) {
-        const perfilCorreto = (papel === 'ATLETA' || papel === 'ATHLETE') ? 'Atleta' : 'Nutricionista';
-        setErro(`Acesso negado. Esta conta é de um ${perfilCorreto}.`);
-        setCarregando(false);
+      if (user.role !== roleSelecionada) {
+        setErro('Acesso negado. Selecione o perfil correto para esta conta.');
         return false;
       }
-      setUsuario(usuarioLogado);
-      setTipoUsuario(papel);
 
-      await AsyncStorage.setItem('usuario', JSON.stringify(usuarioLogado));
-      await AsyncStorage.setItem('tipoUsuario', papel);
+      setUsuario(user);
+      setToken(jwtToken);
+      setTipoUsuario(user.role);
 
-      setCarregando(false);
-      return true;
+      await AsyncStorage.multiSet([
+        ['user', JSON.stringify(user)],
+        ['usuario', JSON.stringify(user)],
+        ['token', jwtToken],
+        ['tipoUsuario', user.role],
+      ]);
 
-    } catch (erro) {
-      setErro('Erro ao conectar com o servidor: ' + erro.message);
-      setCarregando(false);
+      return user;
+    } catch (error) {
+      setErro(error.message || 'Erro ao conectar com o servidor.');
       return false;
+    } finally {
+      setCarregando(false);
     }
   }, []);
 
   const sair = useCallback(async () => {
     try {
       setUsuario(null);
-      setTipoUsuario('NUTRICIONISTA');
+      setToken(null);
+      setTipoUsuario(null);
       setErro('');
-      await AsyncStorage.removeItem('usuario');
-      await AsyncStorage.removeItem('tipoUsuario');
+      await AsyncStorage.multiRemove(['user', 'usuario', 'token', 'tipoUsuario']);
     } catch (error) {
       setErro('Erro ao fazer logout: ' + error.message);
     }
@@ -99,13 +104,15 @@ export const ProvedorAutenticacao = ({ children }) => {
     <ContextoAutenticacao.Provider
       value={{
         usuario,
+        token,
         tipoUsuario,
         carregando,
+        restaurando,
         erro,
         entrar,
         sair,
         limparErro,
-        autenticado: !!usuario,
+        autenticado: !!usuario && !!token,
       }}
     >
       {children}

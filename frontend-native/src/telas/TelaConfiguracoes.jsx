@@ -11,20 +11,17 @@ import { usarAutenticacao } from '../contextos/ContextoAutenticacao';
 import { usarTema } from '../contextos/ContextoTema';
 
 const ROTULOSPAPEL = {
-  NUTRICIONISTA: 'Nutricionista',
   NUTRITIONIST: 'Nutricionista',
-  ATLETA: 'Atleta',
   ATHLETE: 'Atleta',
-  COACH: 'Técnico',
-  TECNICO: 'Técnico',
+  COACH: 'Treinador',
 };
 
 const TelaConfiguracoes = ({ navigation }) => {
   const { temaTemaEscuro, alternarTema } = usarTema();
   const { usuario, sair } = usarAutenticacao();
 
-  const papelUsuario = usuario?.role || usuario?.papel || 'ATLETA';
-  const nomeUsuario = usuario?.name || nomeUsuario || 'Usuário';
+  const papelUsuario = usuario?.role || 'ATHLETE';
+  const nomeUsuario = usuario?.name || 'Usu�rio';
 
   const tratarSaida = () => {
     sair();

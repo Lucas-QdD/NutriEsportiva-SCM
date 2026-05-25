@@ -200,17 +200,22 @@ async function updateUser(req, res) {
       }
     }
 
+    const data = {
+      name,
+      email,
+      role,
+      teamId: teamId || null,
+    };
+
+    // Mantem a senha criptografada quando ela for atualizada.
+    if (password) {
+      data.password = await bcrypt.hash(password, 10);
+    }
+
     // atualiza o usuário
     const updatedUser = await prisma.user.update({
       where: { id },
-      data: {
-        name,
-        email,
-        role,
-        teamId: teamId || null,
-        // password só será atualizada se for enviada
-        ...(password && { password }),
-      },
+      data,
       select: {
         id: true,
         name: true,

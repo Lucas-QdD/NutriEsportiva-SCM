@@ -11,7 +11,7 @@ import {
 import { usarAutenticacao } from '../contextos/ContextoAutenticacao';
 import { usarTema } from '../contextos/ContextoTema'; // Importado para manter consistência com o Dark Mode
 
-const TelaLogin = () => {
+const TelaLogin = ({ navigation }) => {
   // Puxamos também a função 'sair' para deslogar caso o papel esteja incorreto
   const { entrar, sair, carregando, erro } = usarAutenticacao();
   const { temaTemaEscuro } = usarTema();
@@ -19,7 +19,7 @@ const TelaLogin = () => {
   const [dadosFormulario, setDadosFormulario] = useState({
     nomeUsuario: '',
     senha: '',
-    tipoUsuario: 'NUTRICIONISTA', // 'NUTRICIONISTA' ou 'ATLETA'
+    tipoUsuario: 'NUTRITIONIST',
   });
 
   const tratarEntrada = async () => {
@@ -38,17 +38,16 @@ const TelaLogin = () => {
     if (usuarioLogado) {
       // 2. Restrição de Segurança: Verifica se o papel no banco bate com a seleção do botão
       // Caso sua função entrar já retorne o objeto usuário, usamos ele; senão, validamos pelo estado global atualizado
-      const papelNoBanco = usuarioLogado?.role || usuarioLogado?.papel; 
+      const papelNoBanco = usuarioLogado?.role;
 
-      let tipoValido = dadosFormulario.tipoUsuario === 'NUTRICIONISTA' ? 'NUTRITIONIST' : 'ATHLETE';
-      if (dadosFormulario.tipoUsuario === 'ATLETA') tipoValido = 'ATHLETE';
+      const tipoValido = dadosFormulario.tipoUsuario;
 
       if (papelNoBanco && papelNoBanco !== tipoValido && papelNoBanco !== dadosFormulario.tipoUsuario) {
         // Se tentou entrar como Nutricionista sendo Atleta (ou vice-versa), barra o acesso!
         await sair(); 
         Alert.alert(
           'Acesso Negado', 
-          `Este usuário está cadastrado como ${(papelNoBanco === 'ATLETA' || papelNoBanco === 'ATHLETE') ? 'Atleta' : 'Nutricionista'}. Selecione a opção correta para entrar.`
+          `Este usuário está cadastrado como ${papelNoBanco === 'ATHLETE' ? 'Atleta' : papelNoBanco === 'COACH' ? 'Treinador' : 'Nutricionista'}. Selecione a opção correta para entrar.`
         );
       }
     } else {
@@ -170,6 +169,15 @@ const TelaLogin = () => {
       shadowRadius: 8,
       elevation: 4,
     },
+    botaoCadastro: {
+      paddingVertical: 12,
+      alignItems: 'center',
+    },
+    textoCadastro: {
+      color: cores.vermelhoPadrao,
+      fontSize: 14,
+      fontWeight: '600',
+    },
     textoBotaoEntrar: {
       color: '#ffffff',
       fontSize: 16,
@@ -248,17 +256,17 @@ const TelaLogin = () => {
               <TouchableOpacity
                 style={[
                   estilos.botaoTipo,
-                  dadosFormulario.tipoUsuario === 'NUTRICIONISTA' && estilos.botaoTipoSelecionado,
+                  dadosFormulario.tipoUsuario === 'NUTRITIONIST' && estilos.botaoTipoSelecionado,
                 ]}
                 onPress={() =>
-                  setDadosFormulario({ ...dadosFormulario, tipoUsuario: 'NUTRICIONISTA' })
+                  setDadosFormulario({ ...dadosFormulario, tipoUsuario: 'NUTRITIONIST' })
                 }
                 disabled={carregando}
               >
                 <Text
                   style={[
                     estilos.textoBotaoTipo,
-                    dadosFormulario.tipoUsuario === 'NUTRICIONISTA' && estilos.textoBotaoTipoSelecionado,
+                    dadosFormulario.tipoUsuario === 'NUTRITIONIST' && estilos.textoBotaoTipoSelecionado,
                   ]}
                 >
                   Nutricionista
@@ -269,20 +277,40 @@ const TelaLogin = () => {
               <TouchableOpacity
                 style={[
                   estilos.botaoTipo,
-                  dadosFormulario.tipoUsuario === 'ATLETA' && estilos.botaoTipoSelecionado,
+                  dadosFormulario.tipoUsuario === 'ATHLETE' && estilos.botaoTipoSelecionado,
                 ]}
                 onPress={() =>
-                  setDadosFormulario({ ...dadosFormulario, tipoUsuario: 'ATLETA' })
+                  setDadosFormulario({ ...dadosFormulario, tipoUsuario: 'ATHLETE' })
                 }
                 disabled={carregando}
               >
                 <Text
                   style={[
                     estilos.textoBotaoTipo,
-                    dadosFormulario.tipoUsuario === 'ATLETA' && estilos.textoBotaoTipoSelecionado,
+                    dadosFormulario.tipoUsuario === 'ATHLETE' && estilos.textoBotaoTipoSelecionado,
                   ]}
                 >
                   Atleta
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  estilos.botaoTipo,
+                  dadosFormulario.tipoUsuario === 'COACH' && estilos.botaoTipoSelecionado,
+                ]}
+                onPress={() =>
+                  setDadosFormulario({ ...dadosFormulario, tipoUsuario: 'COACH' })
+                }
+                disabled={carregando}
+              >
+                <Text
+                  style={[
+                    estilos.textoBotaoTipo,
+                    dadosFormulario.tipoUsuario === 'COACH' && estilos.textoBotaoTipoSelecionado,
+                  ]}
+                >
+                  Treinador
                 </Text>
               </TouchableOpacity>
             </View>
@@ -301,6 +329,14 @@ const TelaLogin = () => {
               <Text style={estilos.textoBotaoEntrar}>Entrar</Text>
             </TouchableOpacity>
           )}
+
+          <TouchableOpacity
+            style={estilos.botaoCadastro}
+            onPress={() => navigation.navigate('Cadastro')}
+            disabled={carregando}
+          >
+            <Text style={estilos.textoCadastro}>Criar nova conta</Text>
+          </TouchableOpacity>
         </View>
       </View>
 

@@ -46,7 +46,7 @@ const TelaAvaliacao = ({ route }) => {
   const [modoEdicao, setModoEdicao] = useState(false); 
   const [modoVisualizacaoOnly, setModoVisualizacaoOnly] = useState(false); // Controla se o modal abre apenas para leitura
 
-  const ehAtleta = usuario?.role === 'ATHLETE' || usuario?.papel === 'ATLETA';
+  const ehAtleta = usuario?.role === 'ATHLETE';
   const nomeAtletaSelecionado = route.params?.atletaNome || route.params?.atleta?.nome || "";
   const nomeDoUsuario = usuario?.name || usuario?.nome;
 

@@ -7,10 +7,12 @@ import {
   TouchableOpacity, 
   StyleSheet, 
   ScrollView, 
-  useWindowDimensions 
+  useWindowDimensions,
+  ActivityIndicator
 } from 'react-native';
 
 import TelaLogin from '../telas/TelaLogin';
+import TelaCadastro from '../telas/TelaCadastro';
 import TelaPrincipal from '../telas/TelaPrincipal';
 import TelaAtletas from '../telas/TelaAtletas';
 import TelaAvaliacao from '../telas/TelaAvaliacao';
@@ -23,7 +25,7 @@ import { usarTema } from '../contextos/ContextoTema';
 const Pilha = createStackNavigator();
 
 const LayoutComBarraLateral = ({ children, navigation, tipoUsuario }) => {
-  const ehNutricionista = tipoUsuario === 'NUTRICIONISTA' || tipoUsuario === 'NUTRITIONIST';
+  const podeGerenciarAtletas = tipoUsuario === 'NUTRITIONIST' || tipoUsuario === 'COACH';
   const { temaTemaEscuro } = usarTema();
   const { width } = useWindowDimensions();
   const ehDispositivoMovel = width < 768;
@@ -33,7 +35,7 @@ const LayoutComBarraLateral = ({ children, navigation, tipoUsuario }) => {
 
   const itensNavegacao = [
     { nome: 'Painel', rota: 'PainelInicio', icone: '📊' },
-    ...(ehNutricionista ? [{ nome: 'Atletas', rota: 'Atletas', icone: '👥' }] : []),
+    ...(podeGerenciarAtletas ? [{ nome: 'Atletas', rota: 'Atletas', icone: '👥' }] : []),
     { nome: 'Avaliações', rota: 'Avaliacao', icone: '📝' },
     { nome: 'Configurações', rota: 'ConfiguracoesInicio', icone: '⚙️' },
     { nome: 'Manual', rota: 'Manual', icone: '📖' }, 
@@ -190,14 +192,24 @@ const NavegadorApp = ({ tipoUsuario }) => {
 };
 
 export const NavegadorPrincipal = () => {
-  const { autenticado, usuario } = usarAutenticacao();
+  const { autenticado, usuario, restaurando } = usarAutenticacao();
+
+  if (restaurando) {
+    return (
+      <View style={estilos.telaCarregando}>
+        <ActivityIndicator size="large" color="#c41e3a" />
+      </View>
+    );
+  }
+
   return (
     <NavigationContainer>
       {autenticado ? (
-        <NavegadorApp tipoUsuario={usuario?.role || usuario?.papel} />
+        <NavegadorApp tipoUsuario={usuario?.role} />
       ) : (
         <Pilha.Navigator screenOptions={{ headerShown: false }}>
           <Pilha.Screen name="Entrar" component={TelaLogin} />
+          <Pilha.Screen name="Cadastro" component={TelaCadastro} />
         </Pilha.Navigator>
       )}
     </NavigationContainer>
@@ -268,5 +280,11 @@ const estilos = StyleSheet.create({
   },
   areaConteudo: {
     flex: 1,
+  },
+  telaCarregando: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#f3f4f6',
   },
 });
