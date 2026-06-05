@@ -7,6 +7,36 @@ const {
     calcularReposicaoPosTreino,
 } = require("../utils/hydrationFormulas");
 
+function determinarStatus (percentualDesidratacao) {
+    
+    if (percentualDesidratacao < 2) {
+        return "GOOD";
+    }
+
+    if (percentualDesidratacao < 5) {
+        return "MODERATE";
+    }
+
+    return "POOR";
+} 
+
+function gerarRecomendacao(status) {
+
+    switch (status) {
+        case "GOOD":
+            return "Hidratação adequada.";
+
+        case "MODERATE":
+            return "Aumentar ingestão hídrica.";
+
+        case "POOR":
+            return "Reposição hídrica imediata recomendada.";
+
+        default:
+            return "";
+    }
+}
+
 async function processarHidratacao(data){
 
     const {
@@ -51,6 +81,16 @@ async function processarHidratacao(data){
         pesoInicial
     );
 
+    const hydrationStatus =
+        determinarStatus(
+            percentualDesidratacao
+        );
+
+    const recommendation =
+        gerarRecomendacao(
+            hydrationStatus
+        );
+
     const reposicaoPosTreino = calcularReposicaoPosTreino(
         pesoInicial,
         pesoFinal
@@ -61,6 +101,8 @@ async function processarHidratacao(data){
         taxaSudorese,
         percentualDesidratacao,
         reposicaoPosTreino,
+        hydrationStatus,
+        recommendation,
     };
 }
 
