@@ -40,13 +40,22 @@ function gerarRecomendacao(status) {
 async function processarHidratacao(data){
 
     const {
+        sessionId,
         pesoInicial,
         pesoFinal,
         liquidoIngerido,
-        tempoExercicioMinutos,
+        temperatureC,
+        humidityPercent,
+        symptoms,
     } = data;
 
     // Validações básicas
+
+    if (!sessionId){
+        throw new Error(
+            "sessionId é obrigatório"
+        );
+    }
 
     if (
         pesoInicial <= 0 ||
@@ -56,15 +65,35 @@ async function processarHidratacao(data){
             "Pesos inválidos"
         );
     }
-
-    if (tempoExercicioMinutos <= 0) {
+    
+    const session = await prisma.trainingSession.findUnique({
+        where: {
+            id: sessionId,
+        },
+    });
+    
+    if (!session) {
         throw new Error(
-            "Tempo de exercício inválido"
+            "Sessão não encontrada"
         );
     }
-
+    
+    const existingRecord = await prisma.hydrationRecord.findUnique({
+        where: {
+            sessionId,
+        },
+    });
+    
+    if (existingRecord) {
+        throw new Error(
+            "Esta sessão já possui um registro de hidratação"
+        );
+    }
+    
+    const tempoExercicioMinutos = session.durationMin;
+    
     // Cálculos
-
+    
     const perdaHidrica = calcularPerdaHidrica(
         pesoInicial,
         pesoFinal,
@@ -95,6 +124,38 @@ async function processarHidratacao(data){
         pesoInicial,
         pesoFinal
     );
+
+    await prisma.$transaction(async (tx) => {
+
+        await tx.hydrationRecord.create({
+            
+            data: {
+                sessionId,
+                preWeightKg: pesoInicial,
+                postWeightKg: pesoFinal,
+                fluidIntakeLiters: liquidoIngerido,
+                temperatureC,
+                humidityPercent,
+                symptoms,
+            },
+
+        });
+
+        await tx.hydrationResult.create({
+
+            data: {
+                sessionId,
+                sweatRateLitersHour: taxaSudorese,
+                waterLossLiters: perdaHidrica,        
+                dehydrationPercent: percentualDesidratacao,     
+                rehydrationNeedLiters: reposicaoPosTreino,
+                hydrationStatus,
+                recommendation,  
+            },
+        
+        });
+
+    });
 
     return {
         perdaHidrica,
