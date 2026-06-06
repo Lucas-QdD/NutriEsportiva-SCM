@@ -5,29 +5,35 @@ async function calcularHidratacao(req, res) {
     try {
 
         const {
+            sessionId,
             pesoInicial,
             pesoFinal,
             liquidoIngerido,
-            tempoExercicioMinutos,
+            temperatureC,
+            humidityPercent,
+            symptoms,
         } = req.body;
 
         if (
+            !sessionId ||
             pesoInicial === null ||
             pesoFinal === null ||
-            liquidoIngerido === null ||
-            tempoExercicioMinutos === null
+            liquidoIngerido === null
         ) {
             return res.status(400).json({
                 error:
-                    "pesoInicial, pesoFinal, liquidoIngerido e tempoExercicioMinutos são obrigatórios",
+                    "session Id, pesoInicial, pesoFinal e liquidoIngerido são obrigatórios",
             });
         }
 
         const resultado = await hydrationService.processarHidratacao({
+            sessionId,
             pesoInicial,
             pesoFinal,
             liquidoIngerido,
-            tempoExercicioMinutos,
+            temperatureC,
+            humidityPercent,
+            symptoms,
         });
 
         return res.status(200).json(resultado);
