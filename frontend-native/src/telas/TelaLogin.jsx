@@ -134,7 +134,7 @@ const TelaLogin = ({ navigation }) => {
     },
     conteinerBotoesTipo: {
       flexDirection: 'row',
-      gap: 10,
+      gap: 8,
     },
     botaoTipo: {
       flex: 1,
@@ -150,7 +150,7 @@ const TelaLogin = ({ navigation }) => {
     },
     textoBotaoTipo: {
       textAlign: 'center',
-      fontSize: 14,
+      fontSize: 13,
       fontWeight: '600',
       color: cores.textoSecundario,
     },
@@ -251,28 +251,7 @@ const TelaLogin = ({ navigation }) => {
           {/* Seleção de Tipo de Usuário */}
           <View style={estilos.selecaoTipo}>
             <Text style={estilos.rotulo}>Tipo de Usuário</Text>
-            <View style={estilos.conteinerBotoesTipo}>
-              {/* Botão Nutricionista */}
-              <TouchableOpacity
-                style={[
-                  estilos.botaoTipo,
-                  dadosFormulario.tipoUsuario === 'NUTRITIONIST' && estilos.botaoTipoSelecionado,
-                ]}
-                onPress={() =>
-                  setDadosFormulario({ ...dadosFormulario, tipoUsuario: 'NUTRITIONIST' })
-                }
-                disabled={carregando}
-              >
-                <Text
-                  style={[
-                    estilos.textoBotaoTipo,
-                    dadosFormulario.tipoUsuario === 'NUTRITIONIST' && estilos.textoBotaoTipoSelecionado,
-                  ]}
-                >
-                  Nutricionista
-                </Text>
-              </TouchableOpacity>
-              
+            <View style={estilos.conteinerBotoesTipo}> 
               {/* Botão Atleta */}
               <TouchableOpacity
                 style={[
@@ -291,6 +270,27 @@ const TelaLogin = ({ navigation }) => {
                   ]}
                 >
                   Atleta
+                </Text>
+              </TouchableOpacity>
+              
+              {/* Botão Nutricionista */}
+              <TouchableOpacity
+                style={[
+                  estilos.botaoTipo,
+                  dadosFormulario.tipoUsuario === 'NUTRITIONIST' && estilos.botaoTipoSelecionado,
+                ]}
+                onPress={() =>
+                  setDadosFormulario({ ...dadosFormulario, tipoUsuario: 'NUTRITIONIST' })
+                }
+                disabled={carregando}
+              >
+                <Text
+                  style={[
+                    estilos.textoBotaoTipo,
+                    dadosFormulario.tipoUsuario === 'NUTRITIONIST' && estilos.textoBotaoTipoSelecionado,
+                  ]}
+                >
+                  Nutricionista
                 </Text>
               </TouchableOpacity>
 

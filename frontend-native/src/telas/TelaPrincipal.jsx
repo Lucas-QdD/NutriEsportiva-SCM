@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   StyleSheet,
   View,
@@ -18,6 +18,12 @@ const TelaPrincipal = ({ navigation }) => {
   // Estado para controlar qual atleta está selecionado no gráfico (Filtro do Nutricionista)
   const [atletaSelecionadoId, setAtletaSelecionadoId] = useState(atletas[0]?.id || null);
 
+  useEffect(() => {
+    if (atletas.length > 0 && !atletaSelecionadoId) {
+      setAtletaSelecionadoId(atletas[0].id);
+    }
+  }, [atletas, atletaSelecionadoId]);
+
   const papelUser = usuario?.role;
   const ehNutricionista = papelUser === 'NUTRITIONIST' || papelUser === 'COACH';
   const ehAtleta = papelUser === 'ATHLETE';
@@ -35,14 +41,26 @@ const TelaPrincipal = ({ navigation }) => {
   const avaliacoesRecentes = avaliacoesFiltradas.slice(0, 5);
 
   // --- LÓGICA DO DASHBOARD DE EVOLUÇÃO ---
-  // Se for atleta, mostra os dados dele. Se for nutricionista, filtra pelo atleta selecionado no botão.
   const dadosGrafico = avaliacoesFiltradas
-    .filter(av => ehAtleta || av.atletaId === atletaSelecionadoId || av.atletaNome === atletas.find(a => a.id === atletaSelecionadoId)?.nome)
-    // Ordena por data (mais antiga para a mais recente) para o gráfico fazer sentido cronológico
-    .sort((a, b) => new Date(a.data.split('/').reverse().join('-')) - new Date(b.data.split('/').reverse().join('-')))
-    .slice(-6); // Pega os últimos 6 pontos para não poluir o layout
+    .filter(av => {
+      if (ehAtleta) return true;
+      const idAtletaAv = av.atletaId || av.athleteId || av.usuarioId;
+      const nomeAtletaAv = av.atletaNome || av.nome;
+      const atletaSelecionado = atletas && atletas.length > 0 ? atletas.find(a => String(a.id) === String(atletaSelecionadoId)) : null;
+      return String(idAtletaAv) === String(atletaSelecionadoId) || (nomeAtletaAv && atletaSelecionado && nomeAtletaAv.trim() === atletaSelecionado.nome.trim());
+    })
+    .sort((a, b) => {
+      const dataA = a.data ? String(a.data) : '';
+      const dataB = b.data ? String(b.data) : '';
+      const formatarParaOrdenacao = (dataStr) => {
+        const partes = dataStr.split(' ')[0].split('/');
+        if (partes.length !== 3) return new Date(0);
+        return new Date(`${partes[2]}/${partes[1]}/${partes[0]}`); 
+      };
+      return formatarParaOrdenacao(dataA) - formatarParaOrdenacao(dataB);
+    })
+    .slice(-6); 
 
-  // Encontra o maior valor para calcular a escala vertical do gráfico proporcionalmente
   const valoresSuor = dadosGrafico.map(d => parseFloat(d.sweatRate) || 0);
   const maxSuor = valoresSuor.length > 0 ? Math.max(...valoresSuor, 2) : 2; 
 
@@ -62,11 +80,16 @@ const TelaPrincipal = ({ navigation }) => {
 
   const estilos = StyleSheet.create({
     conteiner: { flex: 1, backgroundColor: cores.fundoApp },
-    cabecalho: { backgroundColor: cores.fundoCabecalho, paddingVertical: 20, paddingHorizontal: 30, borderBottomWidth: 1, borderBottomColor: cores.bordaCabecalho, shadowColor: '#000000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: temaTemaEscuro ? 0.2 : 0.05, shadowRadius: 4, elevation: 2 },
+    cabecalho: { backgroundColor: cores.fundoCabecalho, paddingTop: 40, paddingBottom: 20, paddingHorizontal: 20, borderBottomWidth: 1, borderBottomColor: cores.bordaCabecalho, shadowColor: '#000000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: temaTemaEscuro ? 0.2 : 0.05, shadowRadius: 4, elevation: 2 },
     cabecalhoLinha: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 },
-    tituloCabecalho: { fontSize: 24, color: cores.textoPrincipal, fontWeight: 'bold' },
-    botaoSair: { backgroundColor: '#dc2626', paddingVertical: 9, paddingHorizontal: 16, borderRadius: 8, alignItems: 'center' },
+    
+    // CORREÇÃO: O título agora encolhe para dar espaço ao botão se o texto for muito longo
+    tituloCabecalho: { fontSize: 22, color: cores.textoPrincipal, fontWeight: 'bold', flex: 1, flexShrink: 1 },
+    
+    // CORREÇÃO: Botão Sair com largura controlada, flexShrink impedindo corte e conteúdo centralizado
+    botaoSair: { backgroundColor: '#dc2626', paddingVertical: 8, paddingHorizontal: 14, borderRadius: 8, alignItems: 'center', justifyContent: 'center', minWidth: 65, flexShrink: 0 },
     textoBotaoSair: { color: '#ffffff', fontSize: 14, fontWeight: '700' },
+    
     conteudo: { flex: 1, padding: 30 },
     grelhaEstatisticas: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20, gap: 16 },
     cartaoEstatistica: { flex: 1, backgroundColor: cores.vermelhoPadrao, borderRadius: 12, padding: 20, alignItems: 'center', justifyContent: 'center', shadowColor: '#000000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 4 },
@@ -75,8 +98,6 @@ const TelaPrincipal = ({ navigation }) => {
     secao: { marginBottom: 30 },
     cabecalhoSecao: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
     tituloSecao: { fontSize: 18, fontWeight: 'bold', color: cores.textoPrincipal },
-    
-    // Estilos do Seletor e do Gráfico
     conteinerFiltros: { flexDirection: 'row', marginBottom: 12, gap: 8 },
     pílulaFiltro: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, backgroundColor: cores.fundoCartao, borderWidth: 1, borderColor: cores.bordaCartao },
     pílulaFiltroAtiva: { backgroundColor: cores.vermelhoPadrao, borderColor: cores.vermelhoPadrao },
@@ -90,7 +111,6 @@ const TelaPrincipal = ({ navigation }) => {
     rotuloDataPonto: { color: cores.textoSecundario, fontSize: 10, marginTop: 8, textAlign: 'center' },
     linhasDeGrade: { position: 'absolute', width: '100%', height: '100%', justifyContent: 'space-between', zIndex: -1 },
     linhaGrade: { width: '100%', borderTopWidth: 1, borderTopColor: cores.gradeGrafico },
-
     cartaoAvaliacao: { backgroundColor: cores.fundoCartao, borderRadius: 10, padding: 16, marginBottom: 12, shadowColor: '#000000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: temaTemaEscuro ? 0.2 : 0.08, shadowRadius: 4, elevation: 2, borderWidth: 1, borderColor: cores.bordaCartao, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
     infoAvaliacao: { flex: 1 },
     nomeAvaliacao: { fontSize: 16, fontWeight: '600', color: cores.textoPrincipal, marginBottom: 4 },
@@ -106,7 +126,7 @@ const TelaPrincipal = ({ navigation }) => {
       {/* Cabeçalho */}
       <View style={estilos.cabecalho}>
         <View style={estilos.cabecalhoLinha}>
-          <Text style={estilos.tituloCabecalho}>{tituloPainel}</Text>
+          <Text style={estilos.tituloCabecalho} numberOfLines={1}>{tituloPainel}</Text>
           <TouchableOpacity style={estilos.botaoSair} onPress={sair}>
             <Text style={estilos.textoBotaoSair}>Sair</Text>
           </TouchableOpacity>
@@ -128,7 +148,7 @@ const TelaPrincipal = ({ navigation }) => {
           </View>
         )}
 
-        {/* --- NOVO: DASHBOARD DE EVOLUÇÃO COMPACTO --- */}
+        {/* --- DASHBOARD DE EVOLUÇÃO COMPACTO --- */}
         <View style={estilos.secao}>
           <View style={estilos.cabecalhoSecao}>
             <Text style={estilos.tituloSecao}>Evolução da Taxa de Sudorese (L/h)</Text>
@@ -164,10 +184,9 @@ const TelaPrincipal = ({ navigation }) => {
                     <View style={estilos.linhaGrade} />
                   </View>
 
-                  {/* Renderização Dinâmica dos Pontos do Gráfico baseada na escala do maxSuor */}
+                  {/* Renderização Dinâmica dos Pontos do Gráfico */}
                   {dadosGrafico.map((item, index) => {
                     const taxaVal = parseFloat(item.sweatRate) || 0;
-                    // Calcula a altura percentual baseada no maior valor do gráfico
                     const alturaPercent = maxSuor > 0 ? (taxaVal / maxSuor) * 85 : 0; 
 
                     return (
