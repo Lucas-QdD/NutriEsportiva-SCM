@@ -1,31 +1,35 @@
 # SweatApp
 
-O SweatApp é um projeto acadêmico voltado ao monitoramento da taxa de sudorese e apoio à tomada de decisão em hidratação de atletas.
+O SweatApp é um projeto acadêmico desenvolvido por alunos do Instituto Mauá de Tecnologia, voltado ao monitoramento da taxa de sudorese e apoio à tomada de decisão em hidratação de atletas.
 
-A proposta do sistema é permitir o registro de dados antes, durante e após sessões de treino, processar essas informações e fornecer recomendações individualizadas com base no histórico do atleta e no contexto ambiental.
-
----
-## Parceiro
- 
- O parceiro é a São Camilo - NutriEsportiva
+A proposta do sistema é padronizar a coleta de dados de sessões de treino, processar essas informações matematicamente e fornecer o relatório para treinadores e nutricionistas.
 
 ---
 
-## Arquitetura do sistema
+## Parceiro Institucional
 
-O projeto foi estruturado em um modelo cliente-servidor com três camadas principais:
-
-- **Mobile** → Aplicativo para o atleta (React Native)
-- **Web** → Painel para treinador e nutricionista (React Native)
-- **Backend** → API REST compartilhada (Node.js + Express)
-
-O backend centraliza as regras de negócio, o acesso ao banco de dados e a comunicação entre as interfaces.
+Este projeto foi desenvolvido em parceria com a São Camilo, visando atender às necessidades reais de nutricionistas e treinadores esportivos na automação de avaliações físicas.
 
 ---
 
-## Estrutura
-- `frontend-native/` 
-    - `mobile/` aplicativo mobile
-    - `web/` painel web
-- `backend/` API compartilhada
-- `docs/` documentação do projeto
+## Arquitetura e Tecnologias
+
+O projeto foi estruturado em um modelo cliente-servidor com camadas distintas para atender diferentes perfis de usuários:
+
+- Mobile (Atletas): Aplicativo para coleta de dados em campo, desenvolvido em React Native com TypeScript.
+- Web (Stakeholders): Painel de gestão para treinadores e nutricionistas visualizarem históricos.
+- Backend: API REST centralizada desenvolvida em Node.js + Express, responsável pelas regras de negócio e motor matemático de cálculo.
+- Banco de Dados: Gerenciamento de dados locais utilizando SQLite integrado via Prisma ORM.
+
+---
+
+## Integrantes da Equipe
+
+| Nome | RA | GitHub |
+| :--- | :--- | :--- |
+| Terencio Leonardi Curcio | 20.00880-5 | [@terenciolc](https://github.com/terenciolc) |
+| Érico Carvalho Nobre | 24.00147-3 | [@erico75](https://github.com/erico75) |
+| Guilherme Tomaz Gomes | 24.00520-7 | [@guit953](https://github.com/guit953) |
+| Lindsay Luna Sanchez Jaldin | 24.01347-0 | [@LindsayLSJaldin](https://github.com/LindsayLSJaldin) |
+| Lucas Quadros das Dores | 25.00107-4 | [@Lucas-QdD](https://github.com/Lucas-QdD) |
+| Santiago Ciapina Martinez Salazar | 25.00700-6 | [@SantiagoCMS](https://github.com/SantiagoCMS) |
