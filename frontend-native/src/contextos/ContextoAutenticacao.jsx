@@ -96,6 +96,21 @@ export const ProvedorAutenticacao = ({ children }) => {
     }
   }, []);
 
+  const atualizarUsuario = useCallback(async (dadosUsuario) => {
+    if (!dadosUsuario) {
+      return;
+    }
+
+    setUsuario(dadosUsuario);
+    setTipoUsuario(dadosUsuario.role || null);
+
+    await AsyncStorage.multiSet([
+      ['user', JSON.stringify(dadosUsuario)],
+      ['usuario', JSON.stringify(dadosUsuario)],
+      ['tipoUsuario', dadosUsuario.role || ''],
+    ]);
+  }, []);
+
   const limparErro = useCallback(() => {
     setErro('');
   }, []);
@@ -111,6 +126,7 @@ export const ProvedorAutenticacao = ({ children }) => {
         erro,
         entrar,
         sair,
+        atualizarUsuario,
         limparErro,
         autenticado: !!usuario && !!token,
       }}

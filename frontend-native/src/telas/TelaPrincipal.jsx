@@ -262,6 +262,13 @@ const TelaPrincipal = ({ navigation }) => {
           <View style={estilos.cabecalhoSecao}>
             <Text style={estilos.tituloSecao}>Ações Rápidas</Text>
           </View>
+
+          <TouchableOpacity
+            style={estilos.botaoNavegacao}
+            onPress={() => navigation.navigate('MinhaConta')}
+          >
+            <Text style={estilos.textoBotaoNavegacao}>Minha Conta</Text>
+          </TouchableOpacity>
           
           {ehNutricionista && (
             <TouchableOpacity

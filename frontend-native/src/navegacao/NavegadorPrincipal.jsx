@@ -16,6 +16,7 @@ import TelaCadastro from '../telas/TelaCadastro';
 import TelaPrincipal from '../telas/TelaPrincipal';
 import TelaAtletas from '../telas/TelaAtletas';
 import TelaMeusAtletas from '../telas/TelaMeusAtletas';
+import TelaMinhaConta from '../telas/TelaMinhaConta';
 import TelaAvaliacao from '../telas/TelaAvaliacao';
 import TelaConfiguracoes from '../telas/TelaConfiguracoes';
 import TelaManual from '../telas/TelaManual';
@@ -35,6 +36,7 @@ const LayoutComBarraLateral = ({ children, navigation, tipoUsuario }) => {
   const [expandido, setExpandido] = useState(!ehDispositivoMovel);
 
   const itensNavegacao = [
+    { nome: 'Minha Conta', rota: 'MinhaConta', icone: 'EU' },
     ...(podeGerenciarAtletas ? [{ nome: 'Meus Atletas', rota: 'MeusAtletas', icone: 'AT' }] : []),
     { nome: 'Painel', rota: 'PainelInicio', icone: '📊' },
     ...(podeGerenciarAtletas ? [{ nome: 'Atletas', rota: 'Atletas', icone: '👥' }] : []),
@@ -170,6 +172,14 @@ const NavegadorApp = ({ tipoUsuario }) => {
         {(props) => (
           <LayoutComBarraLateral navigation={props.navigation} tipoUsuario={tipoUsuario}>
             <TelaAvaliacao {...props} />
+          </LayoutComBarraLateral>
+        )}
+      </Pilha.Screen>
+
+      <Pilha.Screen name="MinhaConta" options={{ title: 'Minha Conta' }}>
+        {(props) => (
+          <LayoutComBarraLateral navigation={props.navigation} tipoUsuario={tipoUsuario}>
+            <TelaMinhaConta {...props} />
           </LayoutComBarraLateral>
         )}
       </Pilha.Screen>
