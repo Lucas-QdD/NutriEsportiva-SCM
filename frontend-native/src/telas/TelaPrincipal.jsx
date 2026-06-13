@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   StyleSheet,
   View,
@@ -9,11 +9,13 @@ import {
 import { usarDados } from '../contextos/ContextoDados';
 import { usarAutenticacao } from '../contextos/ContextoAutenticacao';
 import { usarTema } from '../contextos/ContextoTema';
+import { api } from '../services/api';
 
 const TelaPrincipal = ({ navigation }) => {
   const { atletas, avaliacoes } = usarDados();
   const { usuario, sair } = usarAutenticacao();
   const { temaTemaEscuro } = usarTema();
+  const [atletasVinculados, setAtletasVinculados] = useState([]);
 
   // Estado para controlar qual atleta está selecionado no gráfico (Filtro do Nutricionista)
   const [atletaSelecionadoId, setAtletaSelecionadoId] = useState(atletas[0]?.id || null);
@@ -28,8 +30,70 @@ const TelaPrincipal = ({ navigation }) => {
         ? 'Painel do Treinador'
         : 'Painel do Nutricionista';
 
+  useEffect(() => {
+    let ativo = true;
+
+    async function carregarAtletasVinculados() {
+      if (!ehNutricionista) {
+        setAtletasVinculados([]);
+        return;
+      }
+
+      try {
+        const links = await api.get('/professional-athletes');
+        const atletasDoProfissional = (Array.isArray(links) ? links : [])
+          .map((link) => link.athlete)
+          .filter(Boolean);
+
+        if (ativo) {
+          setAtletasVinculados(atletasDoProfissional);
+        }
+      } catch (error) {
+        if (ativo) {
+          setAtletasVinculados([]);
+        }
+      }
+    }
+
+    carregarAtletasVinculados();
+
+    return () => {
+      ativo = false;
+    };
+  }, [ehNutricionista, usuario?.id]);
+
+  const atletasDoPainel = useMemo(() => {
+    if (!ehNutricionista) {
+      return atletas;
+    }
+
+    return atletasVinculados.map((atleta) => ({
+      id: atleta.id,
+      nome: atleta.name || atleta.nome,
+      email: atleta.email,
+      role: atleta.role,
+    }));
+  }, [atletas, atletasVinculados, ehNutricionista]);
+
+  const nomesAtletasVinculados = useMemo(
+    () => new Set(atletasDoPainel.map((atleta) => atleta.nome).filter(Boolean)),
+    [atletasDoPainel]
+  );
+
+  useEffect(() => {
+    if (!ehNutricionista || atletasDoPainel.length === 0) {
+      return;
+    }
+
+    const atletaAindaExiste = atletasDoPainel.some((atleta) => atleta.id === atletaSelecionadoId);
+
+    if (!atletaAindaExiste) {
+      setAtletaSelecionadoId(atletasDoPainel[0].id);
+    }
+  }, [atletaSelecionadoId, atletasDoPainel, ehNutricionista]);
+
   const avaliacoesFiltradas = ehNutricionista
-    ? avaliacoes
+    ? avaliacoes.filter((avaliacao) => nomesAtletasVinculados.has(avaliacao.atletaNome || avaliacao.nome))
     : avaliacoes.filter(avaliacao => avaliacao.atletaId === usuario?.id || avaliacao.usuarioId === usuario?.id);
 
   const avaliacoesRecentes = avaliacoesFiltradas.slice(0, 5);
@@ -37,7 +101,7 @@ const TelaPrincipal = ({ navigation }) => {
   // --- LÓGICA DO DASHBOARD DE EVOLUÇÃO ---
   // Se for atleta, mostra os dados dele. Se for nutricionista, filtra pelo atleta selecionado no botão.
   const dadosGrafico = avaliacoesFiltradas
-    .filter(av => ehAtleta || av.atletaId === atletaSelecionadoId || av.atletaNome === atletas.find(a => a.id === atletaSelecionadoId)?.nome)
+    .filter(av => ehAtleta || av.atletaId === atletaSelecionadoId || av.atletaNome === atletasDoPainel.find(a => a.id === atletaSelecionadoId)?.nome)
     // Ordena por data (mais antiga para a mais recente) para o gráfico fazer sentido cronológico
     .sort((a, b) => new Date(a.data.split('/').reverse().join('-')) - new Date(b.data.split('/').reverse().join('-')))
     .slice(-6); // Pega os últimos 6 pontos para não poluir o layout
@@ -118,7 +182,7 @@ const TelaPrincipal = ({ navigation }) => {
         {ehNutricionista && (
           <View style={estilos.grelhaEstatisticas}>
             <View style={estilos.cartaoEstatistica}>
-              <Text style={estilos.valorEstatistica}>{atletas.length}</Text>
+              <Text style={estilos.valorEstatistica}>{atletasDoPainel.length}</Text>
               <Text style={estilos.rotuloEstatistica}>Atletas</Text>
             </View>
             <View style={estilos.cartaoEstatistica}>
@@ -135,9 +199,9 @@ const TelaPrincipal = ({ navigation }) => {
           </View>
 
           {/* Filtro por Atleta se for Nutricionista */}
-          {ehNutricionista && atletas.length > 0 && (
+          {ehNutricionista && atletasDoPainel.length > 0 && (
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={estilos.conteinerFiltros}>
-              {atletas.map((atleta) => (
+              {atletasDoPainel.map((atleta) => (
                 <TouchableOpacity
                   key={atleta.id}
                   style={[estilos.pílulaFiltro, atletaSelecionadoId === atleta.id && estilos.pílulaFiltroAtiva]}
@@ -193,6 +257,15 @@ const TelaPrincipal = ({ navigation }) => {
             <Text style={estilos.tituloSecao}>Ações Rápidas</Text>
           </View>
           
+          {ehNutricionista && (
+            <TouchableOpacity
+              style={estilos.botaoNavegacao}
+              onPress={() => navigation.navigate('MeusAtletas')}
+            >
+              <Text style={estilos.textoBotaoNavegacao}>Meus Atletas</Text>
+            </TouchableOpacity>
+          )}
+
           {ehNutricionista && (
             <TouchableOpacity
               style={estilos.botaoNavegacao}

@@ -31,6 +31,8 @@ model User {
   team           Team?           @relation(fields: [teamId], references: [id])
 
   athleteProfile AthleteProfile?
+  professionalLinks ProfessionalAthleteLink[] @relation("ProfessionalLinks")
+  athleteLinks      ProfessionalAthleteLink[] @relation("AthleteLinks")
 }
 
 model Team {
@@ -99,4 +101,17 @@ model HydrationResult {
   updatedAt           DateTime         @updatedAt
 
   session             TrainingSession  @relation(fields: [sessionId], references: [id])
+}
+
+model ProfessionalAthleteLink {
+  id             String   @id @default(cuid())
+  professionalId String
+  athleteId      String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  professional   User     @relation("ProfessionalLinks", fields: [professionalId], references: [id], onDelete: Cascade)
+  athlete        User     @relation("AthleteLinks", fields: [athleteId], references: [id], onDelete: Cascade)
+
+  @@unique([professionalId, athleteId])
 }

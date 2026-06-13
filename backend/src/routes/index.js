@@ -9,11 +9,18 @@ const { listTeams,
 
 const { createUser, 
     listUsers,
+    searchUserByEmail,
     getUserById,
     updateUser,
     deleteUser,
     loginUser,
 } = require("../controllers/userController");
+
+const {
+    createProfessionalAthleteLink,
+    listProfessionalAthleteLinks,
+    deleteProfessionalAthleteLink,
+} = require("../controllers/professionalAthleteController");
 
 const authMiddleware = require("../middlewares/authMiddleware");
 
@@ -35,9 +42,15 @@ router.post("/users", createUser);
 
 // rotas protegidas de users
 router.get("/users", authMiddleware, listUsers);
+router.get("/users/search", authMiddleware, searchUserByEmail);
 router.get("/users/:id", authMiddleware, getUserById);
 router.put("/users/:id", authMiddleware, updateUser);
 router.delete("/users/:id", authMiddleware, deleteUser);
+
+// rotas protegidas de vinculo profissional-atleta
+router.post("/professional-athletes", authMiddleware, createProfessionalAthleteLink);
+router.get("/professional-athletes", authMiddleware, listProfessionalAthleteLinks);
+router.delete("/professional-athletes/:id", authMiddleware, deleteProfessionalAthleteLink);
 
 // rotas protegidas de teams
 router.get("/teams", authMiddleware, listTeams);

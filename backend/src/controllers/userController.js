@@ -56,6 +56,15 @@ async function createUser(req, res) {
         role,
         teamId: teamId || null,
       },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        teamId: true,
+        createdAt: true,
+        updatedAt: true,
+      },
     });
 
     return res.status(201).json(user);
@@ -96,6 +105,51 @@ async function listUsers(req, res) {
 }
 
 // busca um usuário específico pelo id
+async function searchUserByEmail(req, res) {
+  try {
+    const { email } = req.query;
+
+    if (!["NUTRITIONIST", "COACH"].includes(req.user?.role)) {
+      return res.status(403).json({
+        error: "Apenas nutricionistas ou treinadores podem buscar usuarios por email",
+      });
+    }
+
+    if (!email) {
+      return res.status(400).json({
+        error: "email e obrigatorio",
+      });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: {
+        email,
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        teamId: true,
+      },
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        error: "Usuario nao encontrado",
+      });
+    }
+
+    return res.status(200).json(user);
+  } catch (error) {
+    console.error("Erro ao buscar usuario por email:", error);
+
+    return res.status(500).json({
+      error: error.message,
+    });
+  }
+}
+
 async function getUserById(req, res) {
   try {
     // id vem da rota (/users/:id)
@@ -339,6 +393,7 @@ async function loginUser(req, res) {
 module.exports = {
   createUser,
   listUsers,
+  searchUserByEmail,
   getUserById,
   updateUser,
   deleteUser,
