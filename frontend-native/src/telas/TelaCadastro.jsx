@@ -42,7 +42,7 @@ const TelaCadastro = ({ navigation }) => {
     const mensagemApi = error?.message || '';
 
     if (error?.status === 409 || mensagemApi.toLowerCase().includes('email')) {
-      return 'Este email ja esta em uso. Tente entrar ou cadastre outro email.';
+      return 'Este email já esta em uso. Tente entrar ou cadastre outro email.';
     }
 
     if (error?.status === 400 && mensagemApi.toLowerCase().includes('role')) {
@@ -59,10 +59,10 @@ const TelaCadastro = ({ navigation }) => {
       mensagemApi.toLowerCase().includes('servidor') ||
       !error?.status
     ) {
-      return 'Nao foi possivel conectar com a API. Confira se o backend esta rodando em http://localhost:3333.';
+      return 'Não foi possivel conectar com a API. Confira se o backend esta rodando em http://localhost:3333.';
     }
 
-    return mensagemApi || 'Nao foi possivel criar a conta. Tente novamente.';
+    return mensagemApi || 'Não foi possivel criar a conta. Tente novamente.';
   };
 
   const cadastrar = async () => {
@@ -94,7 +94,7 @@ const TelaCadastro = ({ navigation }) => {
     try {
       await api.post('/users', payload);
 
-      const mensagem = 'Conta criada com sucesso. Agora voce ja pode fazer login.';
+      const mensagem = 'Conta criada com sucesso. Agora você já pode fazer login.';
       setMensagemSucesso(mensagem);
       Alert.alert('Cadastro realizado', mensagem, [
         { text: 'Continuar cadastrando', style: 'cancel' },
@@ -108,7 +108,7 @@ const TelaCadastro = ({ navigation }) => {
         status: error.status,
         data: error.data,
       });
-      Alert.alert('Nao foi possivel cadastrar', mensagem);
+      Alert.alert('Não foi possivel cadastrar', mensagem);
     } finally {
       setCarregando(false);
     }
