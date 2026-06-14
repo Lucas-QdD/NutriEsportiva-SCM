@@ -19,6 +19,8 @@ const authMiddleware = require("../middlewares/authMiddleware");
 
 const hydrationController = require("../controllers/hydrationController");
 
+const trainingSessionController = require("../controllers/trainingSessionController");
+
 const router = Router();
 
 router.get("/", (req, res) => {
@@ -52,6 +54,14 @@ router.post(
   "/hydration/calculate",
   authMiddleware,
   hydrationController.calcularHidratacao
+);
+
+// rotas do trainingSession
+
+router.post(
+  "/training-sessions",
+  authMiddleware,
+  trainingSessionController.createTrainingSession
 );
 
 module.exports = router;
