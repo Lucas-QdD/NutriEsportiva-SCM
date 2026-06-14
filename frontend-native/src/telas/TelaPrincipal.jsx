@@ -17,7 +17,7 @@ const TelaPrincipal = ({ navigation }) => {
   const { temaTemaEscuro } = usarTema();
   const [atletasVinculados, setAtletasVinculados] = useState([]);
 
-  // Estado para controlar qual atleta está selecionado no gráfico (Filtro do Nutricionista)
+  // Estado para controlar qual atleta esta selecionado no grafico.
   const [atletaSelecionadoId, setAtletaSelecionadoId] = useState(atletas[0]?.id || null);
 
   useEffect(() => {
@@ -104,14 +104,14 @@ const TelaPrincipal = ({ navigation }) => {
 
   const avaliacoesRecentes = avaliacoesFiltradas.slice(0, 5);
 
-  // --- LÓGICA DO DASHBOARD DE EVOLUÇÃO ---
+  // --- LOGICA DO DASHBOARD DE EVOLUCAO ---
   const dadosGrafico = avaliacoesFiltradas
     .filter(av => ehAtleta || av.atletaId === atletaSelecionadoId || av.atletaNome === atletasDoPainel.find(a => a.id === atletaSelecionadoId)?.nome)
-    // Ordena por data (mais antiga para a mais recente) para o gráfico fazer sentido cronológico
+    // Ordena por data para o grafico fazer sentido cronologico.
     .sort((a, b) => new Date(a.data.split('/').reverse().join('-')) - new Date(b.data.split('/').reverse().join('-')))
-    .slice(-6); // Pega os últimos 6 pontos para não poluir o layout
+    .slice(-6); // Pega os ultimos 6 pontos para nao poluir o layout.
 
-  // Encontra o maior valor para calcular a escala vertical do gráfico proporcionalmente
+  // Encontra o maior valor para calcular a escala vertical do grafico proporcionalmente.
   const valoresSuor = dadosGrafico.map(d => parseFloat(d.sweatRate) || 0);
   const maxSuor = valoresSuor.length > 0 ? Math.max(...valoresSuor, 2) : 2; 
 
@@ -134,10 +134,10 @@ const TelaPrincipal = ({ navigation }) => {
     cabecalho: { backgroundColor: cores.fundoCabecalho, paddingTop: 40, paddingBottom: 20, paddingHorizontal: 20, borderBottomWidth: 1, borderBottomColor: cores.bordaCabecalho, shadowColor: '#000000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: temaTemaEscuro ? 0.2 : 0.05, shadowRadius: 4, elevation: 2 },
     cabecalhoLinha: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 },
     
-    // CORREÇÃO: O título agora encolhe para dar espaço ao botão se o texto for muito longo
+    // O titulo encolhe para dar espaco ao botao se o texto for muito longo.
     tituloCabecalho: { fontSize: 22, color: cores.textoPrincipal, fontWeight: 'bold', flex: 1, flexShrink: 1 },
     
-    // CORREÇÃO: Botão Sair com largura controlada, flexShrink impedindo corte e conteúdo centralizado
+    // Botao Sair com largura controlada para evitar corte.
     botaoSair: { backgroundColor: '#dc2626', paddingVertical: 8, paddingHorizontal: 14, borderRadius: 8, alignItems: 'center', justifyContent: 'center', minWidth: 65, flexShrink: 0 },
     textoBotaoSair: { color: '#ffffff', fontSize: 14, fontWeight: '700' },
     
@@ -150,10 +150,10 @@ const TelaPrincipal = ({ navigation }) => {
     cabecalhoSecao: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
     tituloSecao: { fontSize: 18, fontWeight: 'bold', color: cores.textoPrincipal },
     conteinerFiltros: { flexDirection: 'row', marginBottom: 12, gap: 8 },
-    pílulaFiltro: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, backgroundColor: cores.fundoCartao, borderWidth: 1, borderColor: cores.bordaCartao },
-    pílulaFiltroAtiva: { backgroundColor: cores.vermelhoPadrao, borderColor: cores.vermelhoPadrao },
-    textoPílula: { fontSize: 12, color: cores.textoSecundario, fontWeight: '500' },
-    textoPílulaAtiva: { color: '#ffffff', fontWeight: 'bold' },
+    pilulaFiltro: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, backgroundColor: cores.fundoCartao, borderWidth: 1, borderColor: cores.bordaCartao },
+    pilulaFiltroAtiva: { backgroundColor: cores.vermelhoPadrao, borderColor: cores.vermelhoPadrao },
+    textoPilula: { fontSize: 12, color: cores.textoSecundario, fontWeight: '500' },
+    textoPilulaAtiva: { color: '#ffffff', fontWeight: 'bold' },
     cartaoDashboard: { backgroundColor: cores.fundoEvolucao, borderRadius: 12, padding: 16, borderWidth: 1, borderColor: cores.bordaCartao, marginBottom: 20 },
     areaGrafico: { height: 160, flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', paddingTop: 20, borderBottomWidth: 2, borderBottomColor: cores.textoSecundario, paddingHorizontal: 10 },
     colunaGrafico: { flex: 1, alignItems: 'center', height: '100%', justifyContent: 'flex-end' },
@@ -174,7 +174,7 @@ const TelaPrincipal = ({ navigation }) => {
 
   return (
     <ScrollView style={estilos.conteiner}>
-      {/* Cabeçalho */}
+      {/* Cabecalho */}
       <View style={estilos.cabecalho}>
         <View style={estilos.cabecalhoLinha}>
           <Text style={estilos.tituloCabecalho} numberOfLines={1}>{tituloPainel}</Text>
@@ -185,7 +185,7 @@ const TelaPrincipal = ({ navigation }) => {
       </View>
 
       <View style={estilos.conteudo}>
-        {/* Bloco de Estatísticas - Visível apenas para o Nutricionista */}
+        {/* Bloco de estatisticas visivel apenas para profissionais */}
         {ehNutricionista && (
           <View style={estilos.grelhaEstatisticas}>
             <View style={estilos.cartaoEstatistica}>
@@ -194,15 +194,15 @@ const TelaPrincipal = ({ navigation }) => {
             </View>
             <View style={estilos.cartaoEstatistica}>
               <Text style={estilos.valorEstatistica}>{avaliacoes.length}</Text>
-              <Text style={estilos.rotuloEstatistica}>Avaliações Totais</Text>
+              <Text style={estilos.rotuloEstatistica}>Avaliacoes Totais</Text>
             </View>
           </View>
         )}
 
-        {/* --- DASHBOARD DE EVOLUÇÃO COMPACTO --- */}
+        {/* --- DASHBOARD DE EVOLUCAO COMPACTO --- */}
         <View style={estilos.secao}>
           <View style={estilos.cabecalhoSecao}>
-            <Text style={estilos.tituloSecao}>Evolução da Taxa de Sudorese (L/h)</Text>
+            <Text style={estilos.tituloSecao}>Evolucao da Taxa de Sudorese (L/h)</Text>
           </View>
 
           {/* Filtro por Atleta se for Nutricionista */}
@@ -211,10 +211,10 @@ const TelaPrincipal = ({ navigation }) => {
               {atletasDoPainel.map((atleta) => (
                 <TouchableOpacity
                   key={atleta.id}
-                  style={[estilos.pílulaFiltro, atletaSelecionadoId === atleta.id && estilos.pílulaFiltroAtiva]}
+                  style={[estilos.pilulaFiltro, atletaSelecionadoId === atleta.id && estilos.pilulaFiltroAtiva]}
                   onPress={() => setAtletaSelecionadoId(atleta.id)}
                 >
-                  <Text style={[estilos.textoPílula, atletaSelecionadoId === atleta.id && estilos.textoPílulaAtiva]}>
+                  <Text style={[estilos.textoPilula, atletaSelecionadoId === atleta.id && estilos.textoPilulaAtiva]}>
                     {atleta.nome}
                   </Text>
                 </TouchableOpacity>
@@ -224,7 +224,7 @@ const TelaPrincipal = ({ navigation }) => {
 
           <View style={estilos.cartaoDashboard}>
             {dadosGrafico.length === 0 ? (
-              <Text style={estilos.textoVazio}>Dados insuficientes para gerar a curva de tendência.</Text>
+              <Text style={estilos.textoVazio}>Dados insuficientes para gerar a curva de tendencia.</Text>
             ) : (
               <View style={{ height: 200, justifyContent: 'flex-end' }}>
                 <View style={estilos.areaGrafico}>
@@ -235,7 +235,7 @@ const TelaPrincipal = ({ navigation }) => {
                     <View style={estilos.linhaGrade} />
                   </View>
 
-                  {/* Renderização Dinâmica dos Pontos do Gráfico */}
+                  {/* Renderizacao dinamica dos pontos do grafico */}
                   {dadosGrafico.map((item, index) => {
                     const taxaVal = parseFloat(item.sweatRate) || 0;
                     const alturaPercent = maxSuor > 0 ? (taxaVal / maxSuor) * 85 : 0; 
@@ -257,10 +257,10 @@ const TelaPrincipal = ({ navigation }) => {
           </View>
         </View>
 
-        {/* Navegação Rápida / Ações */}
+        {/* Navegacao rapida / acoes */}
         <View style={estilos.secao}>
           <View style={estilos.cabecalhoSecao}>
-            <Text style={estilos.tituloSecao}>Ações Rápidas</Text>
+            <Text style={estilos.tituloSecao}>Acoes Rapidas</Text>
           </View>
 
           <TouchableOpacity
@@ -279,33 +279,24 @@ const TelaPrincipal = ({ navigation }) => {
             </TouchableOpacity>
           )}
 
-          {ehNutricionista && (
-            <TouchableOpacity
-              style={estilos.botaoNavegacao}
-              onPress={() => navigation.navigate('Atletas')}
-            >
-              <Text style={estilos.textoBotaoNavegacao}>Gerenciar Atletas</Text>
-            </TouchableOpacity>
-          )}
-
           <TouchableOpacity
             style={estilos.botaoNavegacao}
             onPress={() => navigation.navigate('Avaliacao', { abrirFormulario: true })}
           >
-            <Text style={estilos.textoBotaoNavegacao}>Nova Avaliação</Text>
+            <Text style={estilos.textoBotaoNavegacao}>Nova Avaliacao</Text>
           </TouchableOpacity>
         </View>
 
-        {/* Seção de Histórico de Avaliações */}
+        {/* Secao de historico de avaliacoes */}
         <View style={estilos.secao}>
           <View style={estilos.cabecalhoSecao}>
             <Text style={estilos.tituloSecao}>
-              {ehNutricionista ? 'Avaliações Recentes' : 'Minhas Avaliações'}
+              {ehNutricionista ? 'Avaliacoes Recentes' : 'Minhas Avaliacoes'}
             </Text>
           </View>
 
           {avaliacoesRecentes.length === 0 ? (
-            <Text style={estilos.textoVazio}>Nenhuma avaliação registrada</Text>
+            <Text style={estilos.textoVazio}>Nenhuma avaliacao registrada</Text>
           ) : (
             avaliacoesRecentes.map((item) => (
               <View key={item.id} style={estilos.cartaoAvaliacao}>
@@ -314,10 +305,10 @@ const TelaPrincipal = ({ navigation }) => {
                     {item.atletaNome || item.nome || "Geral"}
                   </Text>
                   <Text style={estilos.dataAvaliacao}>
-                    {item.data} {item.statusHidratacao && `· ${item.statusHidratacao}`}
+                    {item.data} {item.statusHidratacao && `- ${item.statusHidratacao}`}
                   </Text>
                   <Text style={estilos.pesoAvaliacao}>
-                    Taxa: {item.sweatRate ? `${item.sweatRate} L/h` : 'Não calculada'}
+                    Taxa: {item.sweatRate ? `${item.sweatRate} L/h` : 'Nao calculada'}
                   </Text>
                 </View>
                 
@@ -337,3 +328,5 @@ const TelaPrincipal = ({ navigation }) => {
 };
 
 export default TelaPrincipal;
+
+

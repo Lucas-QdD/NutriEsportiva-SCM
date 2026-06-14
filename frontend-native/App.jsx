@@ -1,6 +1,7 @@
 import React from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { PaperProvider } from 'react-native-paper';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 import { ProvedorAutenticacao } from './src/contextos/ContextoAutenticacao';
 import { ProvedorTema, usarTema } from './src/contextos/ContextoTema';
@@ -11,7 +12,14 @@ const ConteudoApp = () => {
   const { tema } = usarTema();
 
   return (
-    <PaperProvider theme={tema}>
+    <PaperProvider
+      theme={tema}
+      settings={{
+        icon: ({ name, color, size }) => (
+          <MaterialCommunityIcons name={name} color={color} size={size} />
+        ),
+      }}
+    >
       <NavegadorPrincipal />
     </PaperProvider>
   );

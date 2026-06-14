@@ -10,6 +10,7 @@ import {
   useWindowDimensions,
   ActivityIndicator
 } from 'react-native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 import TelaLogin from '../telas/TelaLogin';
 import TelaCadastro from '../telas/TelaCadastro';
@@ -32,18 +33,17 @@ const LayoutComBarraLateral = ({ children, navigation, tipoUsuario }) => {
   const { width } = useWindowDimensions();
   const ehDispositivoMovel = width < 768;
 
-  // Estado para controlar se a barra lateral está aberta/expandida no celular
+  // Estado para controlar se a barra lateral esta aberta/expandida no celular
   const [expandido, setExpandido] = useState(!ehDispositivoMovel);
 
   const itensNavegacao = [
-    { nome: 'Minha Conta', rota: 'MinhaConta', icone: 'EU' },
-    ...(podeGerenciarAtletas ? [{ nome: 'Meus Atletas', rota: 'MeusAtletas', icone: 'AT' }] : []),
-    { nome: 'Painel', rota: 'PainelInicio', icone: '📊' },
-    ...(podeGerenciarAtletas ? [{ nome: 'Atletas', rota: 'Atletas', icone: '👥' }] : []),
-    { nome: 'Avaliações', rota: 'Avaliacao', icone: '📝' },
-    { nome: 'Configurações', rota: 'ConfiguracoesInicio', icone: '⚙️' },
-    { nome: 'Manual', rota: 'Manual', icone: '📖' }, 
-    { nome: 'Termos', rota: 'Termos', icone: '📋' },   
+    { nome: 'Minha Conta', rota: 'MinhaConta', icone: 'account-circle' },
+    ...(podeGerenciarAtletas ? [{ nome: 'Meus Atletas', rota: 'MeusAtletas', icone: 'account-group' }] : []),
+    { nome: 'Painel', rota: 'PainelInicio', icone: 'view-dashboard' },
+    { nome: 'Avaliacoes', rota: 'Avaliacao', icone: 'clipboard-pulse' },
+    { nome: 'Configuracoes', rota: 'ConfiguracoesInicio', icone: 'cog' },
+    { nome: 'Manual', rota: 'Manual', icone: 'book-open-page-variant' },
+    { nome: 'Termos', rota: 'Termos', icone: 'file-document-outline' },
   ];
 
   const cores = {
@@ -57,7 +57,7 @@ const LayoutComBarraLateral = ({ children, navigation, tipoUsuario }) => {
 
   return (
     <View style={[estilos.layoutPrincipal, { backgroundColor: cores.fundoApp }]}>
-      {/* Barra Lateral Dinâmica e Expansível */}
+      {/* Barra lateral dinamica e expansivel */}
       <View 
         style={[
           estilos.barraLateral, 
@@ -72,15 +72,18 @@ const LayoutComBarraLateral = ({ children, navigation, tipoUsuario }) => {
         ]}
       >
         <ScrollView style={estilos.conteudoBarraLateral} showsVerticalScrollIndicator={false}>
-          {/* Cabeçalho com Botão de Expandir/Colapsar (Menu Hambúrguer) */}
+          {/* Cabecalho com botao de expandir/colapsar */}
           <View style={[estilos.cabecalhoBarraLateral, { borderBottomColor: cores.bordaLateral, padding: 12 }]}>
             {ehDispositivoMovel ? (
               <TouchableOpacity 
                 style={estilos.botaoAlternar} 
                 onPress={() => setExpandido(!expandido)}
               >
-                {/* Ícone de três listras (Hambúrguer) se fechado, ou X se aberto */}
-                <Text style={estilos.textoBotaoAlternar}>{expandido ? '✕' : '☰'}</Text>
+                <MaterialCommunityIcons
+                  name={expandido ? 'close' : 'menu'}
+                  size={28}
+                  color="#ffffff"
+                />
               </TouchableOpacity>
             ) : (
               <Text style={[estilos.tituloBarraLateral, { color: '#ffffff' }]}>NESC</Text>
@@ -90,12 +93,12 @@ const LayoutComBarraLateral = ({ children, navigation, tipoUsuario }) => {
               <>
                 {ehDispositivoMovel && <Text style={[estilos.tituloBarraLateral, { color: '#ffffff', marginTop: 8 }]}>NESC</Text>}
                 <Text style={estilos.subtituloBarraLateral}>NutriEsportiva</Text>
-                <Text style={estilos.subtituloBarraLateral}>São Camilo</Text>
+                <Text style={estilos.subtituloBarraLateral}>Sao Camilo</Text>
               </>
             )}
           </View>
 
-          {/* Itens de Navegação */}
+          {/* Itens de navegacao */}
           <View style={estilos.itensNavegacao}>
             {itensNavegacao.map((item) => (
               <TouchableOpacity
@@ -112,9 +115,12 @@ const LayoutComBarraLateral = ({ children, navigation, tipoUsuario }) => {
                   if (ehDispositivoMovel) setExpandido(false);
                 }}
               >
-                <Text style={[estilos.iconeItem, { marginRight: mostrarTextos ? 16 : 0 }]}>
-                  {item.icone}
-                </Text>
+                <MaterialCommunityIcons
+                  name={item.icone}
+                  size={24}
+                  color="#ffffff"
+                  style={[estilos.iconeItem, { marginRight: mostrarTextos ? 16 : 0 }]}
+                />
                 {mostrarTextos && <Text style={estilos.textoItem}>{item.nome}</Text>}
               </TouchableOpacity>
             ))}
@@ -122,7 +128,7 @@ const LayoutComBarraLateral = ({ children, navigation, tipoUsuario }) => {
         </ScrollView>
       </View>
 
-      {/* Área de Conteúdo Principal */}
+      {/* Area de conteudo principal */}
       <View style={estilos.areaConteudo}>
         {children}
       </View>
@@ -168,7 +174,7 @@ const NavegadorApp = ({ tipoUsuario }) => {
         )}
       </Pilha.Screen>
 
-      <Pilha.Screen name="Avaliacao" options={{ title: 'Avaliação Nutricional' }}>
+      <Pilha.Screen name="Avaliacao" options={{ title: 'Avaliacao Nutricional' }}>
         {(props) => (
           <LayoutComBarraLateral navigation={props.navigation} tipoUsuario={tipoUsuario}>
             <TelaAvaliacao {...props} />
@@ -184,7 +190,7 @@ const NavegadorApp = ({ tipoUsuario }) => {
         )}
       </Pilha.Screen>
 
-      <Pilha.Screen name="ConfiguracoesInicio" options={{ title: 'Configurações' }}>
+      <Pilha.Screen name="ConfiguracoesInicio" options={{ title: 'Configuracoes' }}>
         {(props) => (
           <LayoutComBarraLateral navigation={props.navigation} tipoUsuario={tipoUsuario}>
             <TelaConfiguracoes {...props} />
@@ -260,11 +266,6 @@ const estilos = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     width: '100%',
-  },
-  textoBotaoAlternar: {
-    color: '#ffffff',
-    fontSize: 24,
-    fontWeight: 'bold',
   },
   tituloBarraLateral: {
     fontSize: 20,
