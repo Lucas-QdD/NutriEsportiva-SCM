@@ -17,6 +17,7 @@ import TelaCadastro from '../telas/TelaCadastro';
 import TelaPrincipal from '../telas/TelaPrincipal';
 import TelaAtletas from '../telas/TelaAtletas';
 import TelaMeusAtletas from '../telas/TelaMeusAtletas';
+import TelaDetalheAtleta from '../telas/TelaDetalheAtleta';
 import TelaMinhaConta from '../telas/TelaMinhaConta';
 import TelaAvaliacao from '../telas/TelaAvaliacao';
 import TelaConfiguracoes from '../telas/TelaConfiguracoes';
@@ -162,6 +163,14 @@ const NavegadorApp = ({ tipoUsuario }) => {
         {(props) => (
           <LayoutComBarraLateral navigation={props.navigation} tipoUsuario={tipoUsuario}>
             <TelaMeusAtletas {...props} />
+          </LayoutComBarraLateral>
+        )}
+      </Pilha.Screen>
+
+      <Pilha.Screen name="DetalheAtleta" options={{ title: 'Detalhe do Atleta' }}>
+        {(props) => (
+          <LayoutComBarraLateral navigation={props.navigation} tipoUsuario={tipoUsuario}>
+            <TelaDetalheAtleta {...props} />
           </LayoutComBarraLateral>
         )}
       </Pilha.Screen>

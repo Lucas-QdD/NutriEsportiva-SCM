@@ -16,7 +16,7 @@ import { usarTema } from '../contextos/ContextoTema';
 
 const ROLES_PROFISSIONAIS = ['NUTRITIONIST', 'COACH'];
 
-const TelaMeusAtletas = () => {
+const TelaMeusAtletas = ({ navigation }) => {
   const { usuario } = usarAutenticacao();
   const { temaTemaEscuro } = usarTema();
 
@@ -108,6 +108,15 @@ const TelaMeusAtletas = () => {
     ]);
   };
 
+  const abrirDetalheAtleta = (atleta) => {
+    if (!atleta) {
+      setErro('Nao foi possivel abrir os dados deste atleta.');
+      return;
+    }
+
+    navigation.navigate('DetalheAtleta', { atleta });
+  };
+
   const cores = {
     fundoApp: temaTemaEscuro ? '#121212' : '#f3f4f6',
     fundoCabecalho: temaTemaEscuro ? '#1e1e1e' : '#f9fafb',
@@ -156,6 +165,19 @@ const TelaMeusAtletas = () => {
       paddingVertical: 10,
       paddingHorizontal: 14,
       alignItems: 'center',
+    },
+    botaoVerAvaliacoes: {
+      backgroundColor: cores.vermelhoPadrao,
+      borderRadius: 8,
+      paddingVertical: 10,
+      paddingHorizontal: 14,
+      alignItems: 'center',
+    },
+    acoesCartao: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 8,
+      marginTop: 8,
     },
     textoBotao: { color: '#ffffff', fontSize: 15, fontWeight: '700' },
     alertaErro: { backgroundColor: '#fee2e2', borderRadius: 8, padding: 12 },
@@ -240,12 +262,21 @@ const TelaMeusAtletas = () => {
                 <Text style={estilos.nome}>{atleta?.name || 'Atleta'}</Text>
                 <Text style={estilos.detalhe}>{atleta?.email}</Text>
                 <Text style={estilos.detalhe}>Role: {atleta?.role}</Text>
-                <TouchableOpacity
-                  style={estilos.botaoSecundario}
-                  onPress={() => removerVinculo(vinculo.id)}
-                >
-                  <Text style={estilos.textoBotao}>Remover vinculo</Text>
-                </TouchableOpacity>
+                <View style={estilos.acoesCartao}>
+                  <TouchableOpacity
+                    style={estilos.botaoVerAvaliacoes}
+                    onPress={() => abrirDetalheAtleta(atleta)}
+                  >
+                    <Text style={estilos.textoBotao}>Ver avaliacoes</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={estilos.botaoSecundario}
+                    onPress={() => removerVinculo(vinculo.id)}
+                  >
+                    <Text style={estilos.textoBotao}>Remover vinculo</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
             );
           })
