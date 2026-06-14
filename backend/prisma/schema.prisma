@@ -92,15 +92,19 @@ model HydrationRecord {
 }
 
 model HydrationResult {
-  id                  String           @id @default(cuid())
-  sessionId           String           @unique
-  sweatRateLitersHour Float
-  hydrationStatus     HydrationStatus
-  recommendation      String
-  createdAt           DateTime         @default(now())
-  updatedAt           DateTime         @updatedAt
+  id                     String           @id @default(cuid())
+  sessionId              String           @unique
+  sweatRateLitersHour    Float
+  waterLossLiters        Float
+  dehydrationPercent     Float
+  rehydrationNeedLiters  Float
 
-  session             TrainingSession  @relation(fields: [sessionId], references: [id])
+  hydrationStatus        HydrationStatus
+  recommendation         String
+  createdAt              DateTime         @default(now())
+  updatedAt              DateTime         @updatedAt
+
+  session                TrainingSession  @relation(fields: [sessionId], references: [id])
 }
 
 model ProfessionalAthleteLink {
@@ -115,3 +119,4 @@ model ProfessionalAthleteLink {
 
   @@unique([professionalId, athleteId])
 }
+
