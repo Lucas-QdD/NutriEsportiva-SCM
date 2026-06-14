@@ -21,6 +21,8 @@ const hydrationController = require("../controllers/hydrationController");
 
 const trainingSessionController = require("../controllers/trainingSessionController");
 
+const athleteProfileController = require("../controllers/athleteProfileController");
+
 const router = Router();
 
 router.get("/", (req, res) => {
@@ -62,6 +64,14 @@ router.post(
   "/training-sessions",
   authMiddleware,
   trainingSessionController.createTrainingSession
+);
+
+// rotas do athleteProfile
+
+router.post(
+  "/athletes",
+  authMiddleware,
+  athleteProfileController.createAthleteProfile
 );
 
 module.exports = router;
