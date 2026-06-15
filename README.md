@@ -16,8 +16,8 @@ Este projeto foi desenvolvido em parceria com a São Camilo, visando atender às
 
 O projeto foi estruturado em um modelo cliente-servidor com camadas distintas para atender diferentes perfis de usuários:
 
-- Mobile (Atletas): Aplicativo para coleta de dados em campo, desenvolvido em React Native com TypeScript.
-- Web (Stakeholders): Painel de gestão para treinadores e nutricionistas visualizarem históricos.
+- Mobile (Atletas): Aplicativo para coleta de dados em campo, desenvolvido em React Native com JavaScript (JSX).
+- Web (Stakeholders): Painel de gestão para treinadores e nutricionistas visualizarem históricos via suporte react-native-web.
 - Backend: API REST centralizada desenvolvida em Node.js + Express, responsável pelas regras de negócio e motor matemático de cálculo.
 - Banco de Dados: Gerenciamento de dados locais utilizando SQLite integrado via Prisma ORM.
 
