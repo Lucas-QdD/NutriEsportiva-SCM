@@ -3,8 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { api } from '../services/api';
 
 const ContextoAutenticacao = createContext();
-
-const ROLES = ['ATHLETE', 'NUTRITIONIST', 'COACH'];
+const ROLES = ['ATHLETE', 'COACH', 'NUTRITIONIST'];
 
 export const ProvedorAutenticacao = ({ children }) => {
   const [usuario, setUsuario] = useState(null);
@@ -17,50 +16,44 @@ export const ProvedorAutenticacao = ({ children }) => {
   useEffect(() => {
     async function restaurarSessao() {
       try {
-        const [usuarioSalvo, tokenSalvo, roleSalva] = await Promise.all([
+        const [usuarioSalvo, tokenSalvo] = await Promise.all([
           AsyncStorage.getItem('user'),
           AsyncStorage.getItem('token'),
-          AsyncStorage.getItem('tipoUsuario'),
         ]);
-
         if (usuarioSalvo && tokenSalvo) {
           const user = JSON.parse(usuarioSalvo);
           setUsuario(user);
           setToken(tokenSalvo);
-          setTipoUsuario(user.role || roleSalva || null);
+          setTipoUsuario(user.role || null);
         }
       } catch (error) {
-        await AsyncStorage.multiRemove(['user', 'usuario', 'token', 'tipoUsuario']);
-        setErro('Nao foi possivel restaurar a sessao.');
+        await AsyncStorage.multiRemove(['user', 'token']);
       } finally {
         setRestaurando(false);
       }
     }
-
     restaurarSessao();
   }, []);
 
   const entrar = useCallback(async (email, password, roleSelecionada) => {
     setCarregando(true);
     setErro('');
-
     try {
       if (!email || !password || !roleSelecionada) {
         setErro('Preencha todos os campos do login.');
         return false;
       }
-
       const dados = await api.post('/login', { email, password });
       const user = dados.user;
       const jwtToken = dados.token;
 
       if (!user || !jwtToken || !ROLES.includes(user.role)) {
-        setErro('Resposta invalida do servidor.');
+        setErro('Resposta inválida do servidor.');
         return false;
       }
 
       if (user.role !== roleSelecionada) {
-        setErro('Acesso negado. Selecione o perfil correto para esta conta.');
+        setErro('Perfil incorreto selecionado.');
         return false;
       }
 
@@ -70,14 +63,11 @@ export const ProvedorAutenticacao = ({ children }) => {
 
       await AsyncStorage.multiSet([
         ['user', JSON.stringify(user)],
-        ['usuario', JSON.stringify(user)],
         ['token', jwtToken],
-        ['tipoUsuario', user.role],
       ]);
-
       return user;
     } catch (error) {
-      setErro(error.message || 'Erro ao conectar com o servidor.');
+      setErro(error.message || 'Erro de autenticação.');
       return false;
     } finally {
       setCarregando(false);
@@ -85,34 +75,25 @@ export const ProvedorAutenticacao = ({ children }) => {
   }, []);
 
   const sair = useCallback(async () => {
-    try {
-      setUsuario(null);
-      setToken(null);
-      setTipoUsuario(null);
-      setErro('');
-      await AsyncStorage.multiRemove(['user', 'usuario', 'token', 'tipoUsuario']);
-    } catch (error) {
-      setErro('Erro ao fazer logout: ' + error.message);
-    }
+    setUsuario(null);
+    setToken(null);
+    setTipoUsuario(null);
+    await AsyncStorage.multiRemove(['user', 'token']);
   }, []);
 
-  const atualizarUsuario = useCallback(async (dadosUsuario) => {
-    if (!dadosUsuario) {
-      return;
-    }
-
-    setUsuario(dadosUsuario);
-    setTipoUsuario(dadosUsuario.role || null);
-
-    await AsyncStorage.multiSet([
-      ['user', JSON.stringify(dadosUsuario)],
-      ['usuario', JSON.stringify(dadosUsuario)],
-      ['tipoUsuario', dadosUsuario.role || ''],
-    ]);
-  }, []);
-
-  const limparErro = useCallback(() => {
-    setErro('');
+  // Sincroniza a resposta relacional do Prisma com o cache local
+  const atualizarUsuario = useCallback(async (dadosNovos) => {
+    if (!dadosNovos) return;
+    setUsuario((anterior) => {
+      const unificado = {
+        ...anterior,
+        ...dadosNovos,
+        athleteProfile: dadosNovos.athleteProfile || anterior?.athleteProfile || null,
+        team: dadosNovos.team || anterior?.team || null
+      };
+      AsyncStorage.setItem('user', JSON.stringify(unificado)).catch(console.error);
+      return unificado;
+    });
   }, []);
 
   return (
@@ -127,7 +108,6 @@ export const ProvedorAutenticacao = ({ children }) => {
         entrar,
         sair,
         atualizarUsuario,
-        limparErro,
         autenticado: !!usuario && !!token,
       }}
     >
@@ -138,8 +118,6 @@ export const ProvedorAutenticacao = ({ children }) => {
 
 export const usarAutenticacao = () => {
   const context = useContext(ContextoAutenticacao);
-  if (!context) {
-    throw new Error('usarAutenticacao deve ser usado dentro de um ProvedorAutenticacao');
-  }
+  if (!context) throw new Error('usarAutenticacao deve ser usado dentro de um ProvedorAutenticacao');
   return context;
 };

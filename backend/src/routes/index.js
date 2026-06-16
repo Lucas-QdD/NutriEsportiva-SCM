@@ -79,6 +79,12 @@ router.post(
   trainingSessionController.createTrainingSession
 );
 
+router.delete(
+  "/training-sessions/:id",
+  authMiddleware,
+  trainingSessionController.deleteTrainingSession
+);
+
 // rotas do athleteProfile
 
 router.post(

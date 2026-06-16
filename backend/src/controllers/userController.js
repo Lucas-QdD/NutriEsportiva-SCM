@@ -152,36 +152,28 @@ async function searchUserByEmail(req, res) {
 
 async function getUserById(req, res) {
   try {
-    // id vem da rota (/users/:id)
     const { id } = req.params;
 
-    // busca o usuário no banco pelo id
     const user = await prisma.user.findUnique({
       where: {
         id,
       },
-
-      // selecionamos apenas os campos seguros 
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-        teamId: true,
-        createdAt: true,
-        updatedAt: true,
+      include: {
+        athleteProfile: true, // 🚀 CORREÇÃO: Garante a entrega do perfil e da idade para o frontend
+        team: true,
       },
     });
 
-    // se não encontrar, retorna erro 404
     if (!user) {
       return res.status(404).json({
         error: "Usuário não encontrado",
       });
     }
 
-    // retorna o usuário encontrado
-    return res.status(200).json(user);
+    // Remove a senha por segurança antes de responder à API
+    const { password, ...secureUser } = user;
+
+    return res.status(200).json(secureUser);
   } catch (error) {
     console.error("Erro ao buscar usuário:", error);
 
@@ -192,65 +184,45 @@ async function getUserById(req, res) {
 }
 
 // atualiza um usuário existente
+// Substitua APENAS a função updateUser dentro do seu src/controllers/userController.js
 async function updateUser(req, res) {
   try {
-    // id vem da rota (/users/:id)
     const { id } = req.params;
+    const { name, email, password, role, teamId, age, sport, athleteCode } = req.body;
 
-    // novos dados enviados no body
-    const { name, email, password, role, teamId } = req.body;
-
-    // verifica se o usuário existe antes de tentar atualizar
     const user = await prisma.user.findUnique({
       where: { id },
     });
 
     if (!user) {
-      return res.status(404).json({
-        error: "Usuário não encontrado",
-      });
+      return res.status(404).json({ error: "Usuário não encontrado" });
     }
 
-    // validação básica (mantendo simples por enquanto)
     if (!name || !email || !role) {
-      return res.status(400).json({
-        error: "name, email e role são obrigatórios",
-      });
+      return res.status(400).json({ error: "name, email e role são obrigatórios" });
     }
-
-    // valida role
-    const validRoles = ["ATHLETE", "COACH", "NUTRITIONIST"];
 
     if (!validRoles.includes(role)) {
-      return res.status(400).json({
-        error: "role inválida",
-      });
+      return res.status(400).json({ error: "role inválida" });
     }
 
-    // verificar se outro usuário já usa esse email
     const existingUser = await prisma.user.findFirst({
       where: {
         email,
-        NOT: { id }, // ignora o próprio usuário que está sendo atualizado
+        NOT: { id },
       },
     });
 
     if (existingUser) {
-      return res.status(409).json({
-        error: "Email já está em uso",
-      });
+      return res.status(409).json({ error: "Email já está em uso" });
     }
 
-    // valida teamId (se enviado)
     if (teamId) {
       const team = await prisma.team.findUnique({
         where: { id: teamId },
       });
-
       if (!team) {
-        return res.status(404).json({
-          error: "Equipe não encontrada",
-        });
+        return res.status(404).json({ error: "Equipe não encontrada" });
       }
     }
 
@@ -261,12 +233,32 @@ async function updateUser(req, res) {
       teamId: teamId || null,
     };
 
-    // Mantem a senha criptografada quando ela for atualizada.
     if (password) {
       data.password = await bcrypt.hash(password, 10);
     }
 
-    // atualiza o usuário
+    // 🚀 SALVAMENTO RELACIONAL ATIVO: Força a gravação de age e sport no Prisma Studio
+    if (role === "ATHLETE" && age !== undefined) {
+      const computedCode = athleteCode || `ATL-${Math.floor(100000 + Math.random() * 900000)}`;
+      
+      await prisma.athleteProfile.upsert({
+        where: { userId: id },
+        update: {
+          age: parseInt(age, 10),
+          sport: sport || "Geral",
+          teamId: teamId
+        },
+        create: {
+          userId: id,
+          teamId: teamId,
+          athleteCode: computedCode,
+          age: parseInt(age, 10),
+          sport: sport || "Geral"
+        }
+      });
+    }
+
+    // Atualiza o utilizador e devolve a árvore relacional completa para o app fixar no cache
     const updatedUser = await prisma.user.update({
       where: { id },
       data,
@@ -278,16 +270,15 @@ async function updateUser(req, res) {
         teamId: true,
         createdAt: true,
         updatedAt: true,
+        athleteProfile: true, // Acopla o perfil atualizado
+        team: true
       },
     });
 
     return res.status(200).json(updatedUser);
   } catch (error) {
     console.error("Erro ao atualizar usuário:", error);
-
-    return res.status(500).json({
-      error: error.message,
-    });
+    return res.status(500).json({ error: error.message });
   }
 }
 
@@ -326,51 +317,39 @@ async function deleteUser(req, res) {
 }
 
 // realiza login do usuário
+// Substitua APENAS a function loginUser dentro do seu src/controllers/userController.js
 async function loginUser(req, res) {
   try {
     const { email, password } = req.body;
 
-    // validação básica
     if (!email || !password) {
-      return res.status(400).json({
-        error: "email e password são obrigatórios",
-      });
+      return res.status(400).json({ error: "email e password são obrigatórios" });
     }
 
-    // busca usuário pelo email
     const user = await prisma.user.findUnique({
       where: { email },
+      include: {
+        athleteProfile: true, // Garante a injeção do perfil no login
+        team: true
+      }
     });
 
     if (!user) {
-      return res.status(404).json({
-        error: "Usuário não encontrado",
-      });
+      return res.status(404).json({ error: "Usuário não encontrado" });
     }
 
-    // compara senha informada com senha criptografada
     const passwordMatch = await bcrypt.compare(password, user.password);
 
     if (!passwordMatch) {
-      return res.status(401).json({
-        error: "Senha incorreta",
-      });
+      return res.status(401).json({ error: "Senha incorreta" });
     }
 
-    // gera token JWT
     const token = jwt.sign(
-      {
-        id: user.id,
-        email: user.email,
-        role: user.role,
-      },
+      { id: user.id, email: user.email, role: user.role },
       process.env.JWT_SECRET, 
-      {
-        expiresIn: "1d",
-      }
+      { expiresIn: "1d" }
     );
 
-    // retorna usuário (sem senha) + token
     return res.status(200).json({
       user: {
         id: user.id,
@@ -378,15 +357,14 @@ async function loginUser(req, res) {
         email: user.email,
         role: user.role,
         teamId: user.teamId,
+        athleteProfile: user.athleteProfile, // Repassa a árvore ao frontend
+        team: user.team
       },
       token,
     });
   } catch (error) {
     console.error("Erro no login:", error);
-
-    return res.status(500).json({
-      error: error.message,
-    });
+    return res.status(500).json({ error: error.message });
   }
 }
 
