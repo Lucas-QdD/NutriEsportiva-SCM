@@ -21,7 +21,7 @@ const TelaConfiguracoes = ({ navigation }) => {
   const { usuario, sair } = usarAutenticacao();
 
   const papelUsuario = usuario?.role || 'ATHLETE';
-  const nomeUsuario = usuario?.name || 'Usu�rio';
+  const nomeUsuario = usuario?.name || 'Usu�rio';
 
   const tratarSaida = () => {
     sair();
@@ -263,11 +263,6 @@ const TelaConfiguracoes = ({ navigation }) => {
             <Text style={estilos.textoBotaoSecundario}>Termos de Uso</Text>
           </TouchableOpacity>
         </View>
-
-        {/* Ação de Desconexão */}
-        <TouchableOpacity style={estilos.botaoSair} onPress={tratarSaida}>
-          <Text style={estilos.textoBotaoNavegacao}>Sair da Conta</Text>
-        </TouchableOpacity>
       </View>
     </ScrollView>
   );

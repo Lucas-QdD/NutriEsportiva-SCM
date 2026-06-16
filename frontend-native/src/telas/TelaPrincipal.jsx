@@ -1,183 +1,174 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import {
-  StyleSheet,
-  View,
-  ScrollView,
-  TouchableOpacity,
-  Text,
-} from 'react-native';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
+import { StyleSheet, View, ScrollView, TouchableOpacity, Text, ActivityIndicator } from 'react-native';
+import { useIsFocused } from '@react-navigation/native'; // Adicionado para ouvir o foco da tela
 import { usarDados } from '../contextos/ContextoDados';
 import { usarAutenticacao } from '../contextos/ContextoAutenticacao';
 import { usarTema } from '../contextos/ContextoTema';
 import { api } from '../services/api';
 
 const TelaPrincipal = ({ navigation }) => {
-  const { atletas, avaliacoes } = usarDados();
+  const { avaliacoes, carregando } = usarDados();
   const { usuario, sair } = usarAutenticacao();
   const { temaTemaEscuro } = usarTema();
   const [atletasVinculados, setAtletasVinculados] = useState([]);
-
-  // Estado para controlar qual atleta esta selecionado no grafico.
-  const [atletaSelecionadoId, setAtletaSelecionadoId] = useState(atletas[0]?.id || null);
-
-  useEffect(() => {
-    if (atletas.length > 0 && !atletaSelecionadoId) {
-      setAtletaSelecionadoId(atletas[0].id);
-    }
-  }, [atletas, atletaSelecionadoId]);
+  const [atletaSelecionadoId, setAtletaSelecionadoId] = useState(null);
+  
+  // Hook que retorna true sempre que esta tela estiver visível/focada
+  const estaFocada = useIsFocused();
 
   const papelUser = usuario?.role;
   const ehNutricionista = papelUser === 'NUTRITIONIST' || papelUser === 'COACH';
   const ehAtleta = papelUser === 'ATHLETE';
-  const tituloPainel =
-    papelUser === 'ATHLETE'
-      ? 'Meu Painel de Atleta'
-      : papelUser === 'COACH'
-        ? 'Painel do Treinador'
-        : 'Painel do Nutricionista';
 
+  const tituloPainel = ehAtleta
+    ? 'Meu Painel de Atleta'
+    : papelUser === 'COACH'
+      ? 'Painel do Treinador'
+      : 'Painel do Nutricionista';
+
+  // Função isolada de busca para podermos chamá-la de forma reativa
+  const buscarAtletas = useCallback(async (ativo) => {
+    if (!ehNutricionista) return;
+    try {
+      const links = await api.get('/professional-athletes');
+      const filtrados = (links || [])
+        .map((l) => l.athlete)
+        .filter(Boolean);
+      
+      if (ativo) {
+        setAtletasVinculados(filtrados);
+        // Atualiza o ID selecionado se ele sumiu da lista (foi deletado) ou se não havia nenhum
+        if (filtrados.length > 0) {
+          const aindaExiste = filtrados.some(a => a.id === atletaSelecionadoId);
+          if (!atletaSelecionadoId || !aindaExiste) {
+            setAtletaSelecionadoId(filtrados[0].id);
+          }
+        } else {
+          setAtletaSelecionadoId(null);
+        }
+      }
+    } catch (error) {
+      if (ativo) setAtletasVinculados([]);
+    }
+  }, [ehNutricionista, atletaSelecionadoId]);
+
+  // Sincroniza a lista de atletas sempre que a tela ganha foco ou as avaliações mudam
   useEffect(() => {
     let ativo = true;
-
-    async function carregarAtletasVinculados() {
-      if (!ehNutricionista) {
-        setAtletasVinculados([]);
-        return;
-      }
-
-      try {
-        const links = await api.get('/professional-athletes');
-        const atletasDoProfissional = (Array.isArray(links) ? links : [])
-          .map((link) => link.athlete)
-          .filter(Boolean);
-
-        if (ativo) {
-          setAtletasVinculados(atletasDoProfissional);
-        }
-      } catch (error) {
-        if (ativo) {
-          setAtletasVinculados([]);
-        }
-      }
+    if (estaFocada) {
+      buscarAtletas(ativo);
     }
+    return () => { ativo = false; };
+  }, [estaFocada, buscarAtletas, avaliacoes]); 
+  // Colocar 'avaliacoes' aqui força a atualização se o contexto global de avaliações mudar
 
-    carregarAtletasVinculados();
+  // Filtra as avaliações do utilizador selecionado para plotar no gráfico cronológico
+  const dadosGrafico = useMemo(() => {
+    const alvoId = ehAtleta ? usuario?.id : atletaSelecionadoId;
+    if (!alvoId) return [];
+    
+    return (avaliacoes || [])
+      .filter(av => av && (av.athleteId === alvoId || av.athlete?.userId === alvoId))
+      .sort((a, b) => new Date(a.sessionDate || a.createdAt) - new Date(b.sessionDate || b.createdAt))
+      .slice(-6); 
+  }, [avaliacoes, ehAtleta, usuario, atletaSelecionadoId]);
 
-    return () => {
-      ativo = false;
-    };
-  }, [ehNutricionista, usuario?.id]);
+  const maxSuor = useMemo(() => {
+    const valores = dadosGrafico.map(d => parseFloat(d.result?.sweatRateLitersHour) || 0);
+    return valores.length > 0 ? Math.max(...valores, 2) : 2;
+  }, [dadosGrafico]);
 
-  const atletasDoPainel = useMemo(() => {
-    if (!ehNutricionista) {
-      return atletas;
-    }
-
-    return atletasVinculados.map((atleta) => ({
-      id: atleta.id,
-      nome: atleta.name || atleta.nome,
-      email: atleta.email,
-      role: atleta.role,
-    }));
-  }, [atletas, atletasVinculados, ehNutricionista]);
-
-  const nomesAtletasVinculados = useMemo(
-    () => new Set(atletasDoPainel.map((atleta) => atleta.nome).filter(Boolean)),
-    [atletasDoPainel]
-  );
-
-  useEffect(() => {
-    if (!ehNutricionista || atletasDoPainel.length === 0) {
-      return;
-    }
-
-    const atletaAindaExiste = atletasDoPainel.some((atleta) => atleta.id === atletaSelecionadoId);
-
-    if (!atletaAindaExiste) {
-      setAtletaSelecionadoId(atletasDoPainel[0].id);
-    }
-  }, [atletaSelecionadoId, atletasDoPainel, ehNutricionista]);
-
-  const avaliacoesFiltradas = ehNutricionista
-    ? avaliacoes.filter((avaliacao) => nomesAtletasVinculados.has(avaliacao.atletaNome || avaliacao.nome))
-    : avaliacoes.filter(avaliacao => avaliacao.atletaId === usuario?.id || avaliacao.usuarioId === usuario?.id);
-
-  const avaliacoesRecentes = avaliacoesFiltradas.slice(0, 5);
-
-  // --- LOGICA DO DASHBOARD DE EVOLUCAO ---
-  const dadosGrafico = avaliacoesFiltradas
-    .filter(av => ehAtleta || av.atletaId === atletaSelecionadoId || av.atletaNome === atletasDoPainel.find(a => a.id === atletaSelecionadoId)?.nome)
-    // Ordena por data para o grafico fazer sentido cronologico.
-    .sort((a, b) => new Date(a.data.split('/').reverse().join('-')) - new Date(b.data.split('/').reverse().join('-')))
-    .slice(-6); // Pega os ultimos 6 pontos para nao poluir o layout.
-
-  // Encontra o maior valor para calcular a escala vertical do grafico proporcionalmente.
-  const valoresSuor = dadosGrafico.map(d => parseFloat(d.sweatRate) || 0);
-  const maxSuor = valoresSuor.length > 0 ? Math.max(...valoresSuor, 2) : 2; 
-
+  // CORREÇÃO CRÍTICA: Mapeamento de cores dinâmico escuro/claro integrado ao ContextoTema
   const cores = {
-    fundoApp: temaTemaEscuro ? '#121212' : '#f3f4f6',
-    fundoCabecalho: temaTemaEscuro ? '#1e1e1e' : '#f9fafb',
-    bordaCabecalho: temaTemaEscuro ? '#2d2d2d' : '#e5e7eb',
-    textoPrincipal: temaTemaEscuro ? '#ffffff' : '#1f2937',
-    textoSecundario: temaTemaEscuro ? '#a3a3a3' : '#6b7280',
-    textoTres: temaTemaEscuro ? '#d4d4d4' : '#374151',
+    fundoApp: temaTemaEscuro ? '#121212' : '#f4f7f9', 
+    fundoCabecalho: temaTemaEscuro ? '#1e1e1e' : '#ffffff',
+    bordaCabecalho: temaTemaEscuro ? '#2d2d2d' : '#e2e8f0',
+    textoPrincipal: temaTemaEscuro ? '#ffffff' : '#1e293b', 
+    textoSecundario: temaTemaEscuro ? '#a3a3a3' : '#707d93', 
     fundoCartao: temaTemaEscuro ? '#1e1e1e' : '#ffffff',
-    bordaCartao: temaTemaEscuro ? '#2d2d2d' : '#f3f4f6',
-    vermelhoPadrao: '#c41e3a',
-    fundoEvolucao: temaTemaEscuro ? '#1c1c1e' : '#f9fafb',
-    gradeGrafico: temaTemaEscuro ? '#2c2c2e' : '#e5e7eb'
+    bordaCartao: temaTemaEscuro ? '#2d2d2d' : '#f1f5f9',
+    vermelhoPrincipal: '#bd3339',
+    vermelhoBotaoSair: '#dc2626',
   };
 
   const estilos = StyleSheet.create({
     conteiner: { flex: 1, backgroundColor: cores.fundoApp },
-    cabecalho: { backgroundColor: cores.fundoCabecalho, paddingTop: 40, paddingBottom: 20, paddingHorizontal: 20, borderBottomWidth: 1, borderBottomColor: cores.bordaCabecalho, shadowColor: '#000000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: temaTemaEscuro ? 0.2 : 0.05, shadowRadius: 4, elevation: 2 },
-    cabecalhoLinha: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 },
-    
-    // O titulo encolhe para dar espaco ao botao se o texto for muito longo.
-    tituloCabecalho: { fontSize: 22, color: cores.textoPrincipal, fontWeight: 'bold', flex: 1, flexShrink: 1 },
-    
-    // Botao Sair com largura controlada para evitar corte.
-    botaoSair: { backgroundColor: '#dc2626', paddingVertical: 8, paddingHorizontal: 14, borderRadius: 8, alignItems: 'center', justifyContent: 'center', minWidth: 65, flexShrink: 0 },
-    textoBotaoSair: { color: '#ffffff', fontSize: 14, fontWeight: '700' },
-    
-    conteudo: { flex: 1, padding: 30 },
-    grelhaEstatisticas: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20, gap: 16 },
-    cartaoEstatistica: { flex: 1, backgroundColor: cores.vermelhoPadrao, borderRadius: 12, padding: 20, alignItems: 'center', justifyContent: 'center', shadowColor: '#000000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 4 },
-    valorEstatistica: { fontSize: 32, fontWeight: 'bold', color: '#ffffff', marginBottom: 8 },
-    rotuloEstatistica: { fontSize: 12, color: '#ffffff', textAlign: 'center', fontWeight: '600' },
-    secao: { marginBottom: 30 },
-    cabecalhoSecao: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
-    tituloSecao: { fontSize: 18, fontWeight: 'bold', color: cores.textoPrincipal },
-    conteinerFiltros: { flexDirection: 'row', marginBottom: 12, gap: 8 },
-    pilulaFiltro: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, backgroundColor: cores.fundoCartao, borderWidth: 1, borderColor: cores.bordaCartao },
-    pilulaFiltroAtiva: { backgroundColor: cores.vermelhoPadrao, borderColor: cores.vermelhoPadrao },
-    textoPilula: { fontSize: 12, color: cores.textoSecundario, fontWeight: '500' },
+    cabecalho: { 
+      backgroundColor: cores.fundoCabecalho, 
+      paddingTop: 20, 
+      paddingBottom: 20, 
+      paddingHorizontal: 20, 
+      borderBottomWidth: 1, 
+      borderBottomColor: cores.bordaCabecalho 
+    },
+    cabecalhoLinha: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    tituloCabecalho: { fontSize: 24, color: cores.textoPrincipal, fontWeight: 'bold', flex: 0.7 },
+    botaoSair: { backgroundColor: cores.vermelhoBotaoSair, paddingVertical: 10, paddingHorizontal: 22, borderRadius: 12 },
+    textoBotaoSair: { color: '#ffffff', fontWeight: 'bold', fontSize: 16 },
+    conteudo: { padding: 30 },
+    conteinerContadores: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 24, gap: 16 },
+    cartaoContador: { flex: 1, backgroundColor: cores.vermelhoPrincipal, borderRadius: 16, padding: 20, alignItems: 'center', justifyContent: 'center', elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 4 },
+    numeroContador: { fontSize: 42, color: '#ffffff', fontWeight: 'bold', marginBottom: 4 },
+    rotuloContador: { fontSize: 14, color: '#ffffff', fontWeight: '600', textAlign: 'center' },
+    secao: { marginBottom: 28 },
+    tituloSecao: { fontSize: 18, fontWeight: 'bold', color: cores.textoPrincipal, marginBottom: 16 },
+    conteinerFiltros: { flexDirection: 'row', marginBottom: 14, gap: 8 },
+    pilulaFiltro: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, backgroundColor: cores.fundoCartao, borderWidth: 1, borderColor: cores.bordaCartao },
+    pilulaFiltroAtiva: { backgroundColor: cores.vermelhoPrincipal, borderColor: cores.vermelhoPrincipal },
+    textoPilula: { fontSize: 14, color: cores.textoSecundario },
     textoPilulaAtiva: { color: '#ffffff', fontWeight: 'bold' },
-    cartaoDashboard: { backgroundColor: cores.fundoEvolucao, borderRadius: 12, padding: 16, borderWidth: 1, borderColor: cores.bordaCartao, marginBottom: 20 },
-    areaGrafico: { height: 160, flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', paddingTop: 20, borderBottomWidth: 2, borderBottomColor: cores.textoSecundario, paddingHorizontal: 10 },
-    colunaGrafico: { flex: 1, alignItems: 'center', height: '100%', justifyContent: 'flex-end' },
-    pontoLinha: { width: 12, borderRadius: 6, backgroundColor: cores.vermelhoPadrao, position: 'absolute', bottom: 0, alignItems: 'center', justifyContent: 'center' },
-    rotuloValorPonto: { color: cores.textoPrincipal, fontSize: 10, fontWeight: 'bold', position: 'absolute', top: -16 },
-    rotuloDataPonto: { color: cores.textoSecundario, fontSize: 10, marginTop: 8, textAlign: 'center' },
+    cartaoDashboard: { 
+      backgroundColor: cores.fundoCartao, 
+      borderRadius: 16, 
+      padding: 32, 
+      minHeight: 180,
+      justifyContent: 'center', 
+      alignItems: 'center',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.03,
+      shadowRadius: 8,
+      elevation: 1,
+      borderWidth: temaTemaEscuro ? 1 : 0,
+      borderColor: cores.bordaCartao,
+    },
+    textoDadosInsuficientes: { 
+      textAlign: 'center', 
+      color: cores.textoSecundario, 
+      fontSize: 18, 
+      lineHeight: 24,
+      fontWeight: '500'
+    },
+    areaGrafico: { height: 180, flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', width: '100%' },
+    colunaGrafico: { flex: 1, alignItems: 'center', justifyContent: 'flex-end', height: '100%' },
+    pontoLinha: { width: 14, borderRadius: 7, backgroundColor: cores.vermelhoPrincipal, position: 'absolute', alignItems: 'center', justifyContent: 'center' },
+    rotuloValorPonto: { color: cores.textoPrincipal, fontSize: 11, fontWeight: 'bold', position: 'absolute', top: -20, width: 50, textAlign: 'center' },
+    rotuloDataPonto: { color: cores.textoSecundario, fontSize: 11, marginTop: 10 },
     linhasDeGrade: { position: 'absolute', width: '100%', height: '100%', justifyContent: 'space-between', zIndex: -1 },
-    linhaGrade: { width: '100%', borderTopWidth: 1, borderTopColor: cores.gradeGrafico },
-    cartaoAvaliacao: { backgroundColor: cores.fundoCartao, borderRadius: 10, padding: 16, marginBottom: 12, shadowColor: '#000000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: temaTemaEscuro ? 0.2 : 0.08, shadowRadius: 4, elevation: 2, borderWidth: 1, borderColor: cores.bordaCartao, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-    infoAvaliacao: { flex: 1 },
-    nomeAvaliacao: { fontSize: 16, fontWeight: '600', color: cores.textoPrincipal, marginBottom: 4 },
-    dataAvaliacao: { fontSize: 14, color: cores.textoSecundario },
-    pesoAvaliacao: { fontSize: 14, color: cores.textoTres, fontWeight: '500' },
-    textoVazio: { textAlign: 'center', color: cores.textoSecundario, padding: 40, fontSize: 16 },
-    botaoNavegacao: { backgroundColor: cores.vermelhoPadrao, paddingVertical: 12, paddingHorizontal: 20, borderRadius: 10, alignItems: 'center', marginBottom: 16, shadowColor: '#000000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 8, elevation: 4 },
-    textoBotaoNavegacao: { color: '#ffffff', fontSize: 16, fontWeight: '600' },
+    linhaGrade: { width: '100%', borderTopWidth: 1, borderTopColor: temaTemaEscuro ? '#2d2d2d' : '#e2e8f0' },
+    botaoNavegacao: { 
+      backgroundColor: cores.vermelhoPrincipal, 
+      paddingVertical: 16, 
+      borderRadius: 12, 
+      alignItems: 'center', 
+      marginBottom: 12,
+    },
+    textoBotaoNavegacao: { color: '#ffffff', fontWeight: 'bold', fontSize: 16 },
+    textoNenhumaAvaliacao: {
+      textAlign: 'center',
+      color: cores.textoSecundario,
+      fontSize: 18,
+      paddingVertical: 16,
+      fontWeight: '500'
+    }
   });
 
   return (
-    <ScrollView style={estilos.conteiner}>
-      {/* Cabecalho */}
+    <ScrollView style={estilos.conteiner} showsVerticalScrollIndicator={false}>
+      {/* Cabeçalho */}
       <View style={estilos.cabecalho}>
         <View style={estilos.cabecalhoLinha}>
-          <Text style={estilos.tituloCabecalho} numberOfLines={1}>{tituloPainel}</Text>
+          <Text style={estilos.tituloCabecalho}>{tituloPainel}</Text>
           <TouchableOpacity style={estilos.botaoSair} onPress={sair}>
             <Text style={estilos.textoBotaoSair}>Sair</Text>
           </TouchableOpacity>
@@ -185,148 +176,93 @@ const TelaPrincipal = ({ navigation }) => {
       </View>
 
       <View style={estilos.conteudo}>
-        {/* Bloco de estatisticas visivel apenas para profissionais */}
+        {/* Bloco de Contadores Superiores - Atualização instantânea via state e context */}
         {ehNutricionista && (
-          <View style={estilos.grelhaEstatisticas}>
-            <View style={estilos.cartaoEstatistica}>
-              <Text style={estilos.valorEstatistica}>{atletasDoPainel.length}</Text>
-              <Text style={estilos.rotuloEstatistica}>Atletas</Text>
+          <View style={estilos.conteinerContadores}>
+            <View style={estilos.cartaoContador}>
+              <Text style={estilos.numeroContador}>{atletasVinculados.length}</Text>
+              <Text style={estilos.rotuloContador}>Atletas</Text>
             </View>
-            <View style={estilos.cartaoEstatistica}>
-              <Text style={estilos.valorEstatistica}>{avaliacoes.length}</Text>
-              <Text style={estilos.rotuloEstatistica}>Avaliacoes Totais</Text>
+            <View style={estilos.cartaoContador}>
+              <Text style={estilos.numeroContador}>{(avaliacoes || []).length}</Text>
+              <Text style={estilos.rotuloContador}>Avaliações Totais</Text>
             </View>
           </View>
         )}
 
-        {/* --- DASHBOARD DE EVOLUCAO COMPACTO --- */}
+        {/* Seção da Curva de Sudorese */}
         <View style={estilos.secao}>
-          <View style={estilos.cabecalhoSecao}>
-            <Text style={estilos.tituloSecao}>Evolucao da Taxa de Sudorese (L/h)</Text>
-          </View>
-
-          {/* Filtro por Atleta se for Nutricionista */}
-          {ehNutricionista && atletasDoPainel.length > 0 && (
+          <Text style={estilos.tituloSecao}>Evolução da Taxa de Sudorese (L/h)</Text>
+          
+          {ehNutricionista && atletasVinculados.length > 0 && (
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={estilos.conteinerFiltros}>
-              {atletasDoPainel.map((atleta) => (
-                <TouchableOpacity
-                  key={atleta.id}
-                  style={[estilos.pilulaFiltro, atletaSelecionadoId === atleta.id && estilos.pilulaFiltroAtiva]}
-                  onPress={() => setAtletaSelecionadoId(atleta.id)}
-                >
-                  <Text style={[estilos.textoPilula, atletaSelecionadoId === atleta.id && estilos.textoPilulaAtiva]}>
-                    {atleta.nome}
-                  </Text>
+              {atletasVinculados.map((a) => (
+                <TouchableOpacity key={a.id} style={[estilos.pilulaFiltro, atletaSelecionadoId === a.id && estilos.pilulaFiltroAtiva]} onPress={() => setAtletaSelecionadoId(a.id)}>
+                  <Text style={[estilos.textoPilula, atletaSelecionadoId === a.id && estilos.textoPilulaAtiva]}>{a.name}</Text>
                 </TouchableOpacity>
               ))}
             </ScrollView>
           )}
 
           <View style={estilos.cartaoDashboard}>
-            {dadosGrafico.length === 0 ? (
-              <Text style={estilos.textoVazio}>Dados insuficientes para gerar a curva de tendencia.</Text>
+            {carregando ? (
+              <ActivityIndicator size="small" color={cores.vermelhoPrincipal} />
+            ) : dadosGrafico.length === 0 ? (
+              <Text style={estilos.textoDadosInsuficientes}>
+                Dados insuficientes para gerar a curva de tendência.
+              </Text>
             ) : (
-              <View style={{ height: 200, justifyContent: 'flex-end' }}>
-                <View style={estilos.areaGrafico}>
-                  {/* Linhas de Grade de Fundo */}
-                  <View style={estilos.linhasDeGrade}>
-                    <View style={estilos.linhaGrade} />
-                    <View style={estilos.linhaGrade} />
-                    <View style={estilos.linhaGrade} />
-                  </View>
-
-                  {/* Renderizacao dinamica dos pontos do grafico */}
-                  {dadosGrafico.map((item, index) => {
-                    const taxaVal = parseFloat(item.sweatRate) || 0;
-                    const alturaPercent = maxSuor > 0 ? (taxaVal / maxSuor) * 85 : 0; 
-
-                    return (
-                      <View key={item.id || index} style={estilos.colunaGrafico}>
-                        <View style={[estilos.pontoLinha, { height: 12, bottom: `${alturaPercent}%` }]}>
-                          <Text style={estilos.rotuloValorPonto}>{taxaVal.toFixed(1)}L</Text>
-                        </View>
-                        <Text style={estilos.rotuloDataPonto} numberOfLines={1}>
-                          {item.data.substring(0, 5)}
-                        </Text>
+              <View style={estilos.areaGrafico}>
+                <View style={estilos.linhasDeGrade}><View style={estilos.linhaGrade} /><View style={estilos.linhaGrade} /></View>
+                {dadosGrafico.map((item, index) => {
+                  const valor = parseFloat(item.result?.sweatRateLitersHour) || 0;
+                  const altura = maxSuor > 0 ? (valor / maxSuor) * 80 : 0;
+                  return (
+                    <View key={item.id || index} style={estilos.colunaGrafico}>
+                      <View style={[estilos.pontoLinha, { height: 14, bottom: `${altura}%` }]}>
+                        <Text style={estilos.rotuloValorPonto}>{valor.toFixed(2)} L/h</Text>
                       </View>
-                    );
-                  })}
-                </View>
+                      <Text style={estilos.rotuloDataPonto}>
+                        {item.sessionDate ? new Date(item.sessionDate).toLocaleDateString('pt-BR').substring(0, 5) : 'N/A'}
+                      </Text>
+                    </View>
+                  );
+                })}
               </View>
             )}
           </View>
         </View>
 
-        {/* Navegacao rapida / acoes */}
+        {/* Seção de Ações Rápidas */}
         <View style={estilos.secao}>
-          <View style={estilos.cabecalhoSecao}>
-            <Text style={estilos.tituloSecao}>Acoes Rapidas</Text>
-          </View>
-
-          <TouchableOpacity
-            style={estilos.botaoNavegacao}
-            onPress={() => navigation.navigate('MinhaConta')}
-          >
-            <Text style={estilos.textoBotaoNavegacao}>Minha Conta</Text>
-          </TouchableOpacity>
+          <Text style={estilos.tituloSecao}>Ações Rápidas</Text>
           
-          {ehNutricionista && (
-            <TouchableOpacity
-              style={estilos.botaoNavegacao}
-              onPress={() => navigation.navigate('MeusAtletas')}
-            >
-              <Text style={estilos.textoBotaoNavegacao}>Meus Atletas</Text>
+          {ehNutricionista ? (
+            <>
+              <TouchableOpacity style={estilos.botaoNavegacao} onPress={() => navigation.navigate('MeusAtletas')}>
+                <Text style={estilos.textoBotaoNavegacao}>Gerenciar Atletas</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={estilos.botaoNavegacao} onPress={() => navigation.navigate('Avaliacao')}>
+                <Text style={estilos.textoBotaoNavegacao}>Nova Avaliação</Text>
+              </TouchableOpacity>
+            </>
+          ) : (
+            <TouchableOpacity style={estilos.botaoNavegacao} onPress={() => navigation.navigate('Avaliacao')}>
+              <Text style={estilos.textoBotaoNavegacao}>Nova Avaliação</Text>
             </TouchableOpacity>
           )}
-
-          <TouchableOpacity
-            style={estilos.botaoNavegacao}
-            onPress={() => navigation.navigate('Avaliacao', { abrirFormulario: true })}
-          >
-            <Text style={estilos.textoBotaoNavegacao}>Nova Avaliacao</Text>
-          </TouchableOpacity>
         </View>
 
-        {/* Secao de historico de avaliacoes */}
-        <View style={estilos.secao}>
-          <View style={estilos.cabecalhoSecao}>
-            <Text style={estilos.tituloSecao}>
-              {ehNutricionista ? 'Avaliacoes Recentes' : 'Minhas Avaliacoes'}
-            </Text>
+        {/* Seção Exclusiva "Minhas Avaliações" */}
+        {ehAtleta && (
+          <View style={estilos.secao}>
+            <Text style={estilos.tituloSecao}>Minhas Avaliações</Text>
+            <Text style={estilos.textoNenhumaAvaliacao}>Nenhuma avaliação registrada</Text>
           </View>
-
-          {avaliacoesRecentes.length === 0 ? (
-            <Text style={estilos.textoVazio}>Nenhuma avaliacao registrada</Text>
-          ) : (
-            avaliacoesRecentes.map((item) => (
-              <View key={item.id} style={estilos.cartaoAvaliacao}>
-                <View style={estilos.infoAvaliacao}>
-                  <Text style={estilos.nomeAvaliacao}>
-                    {item.atletaNome || item.nome || "Geral"}
-                  </Text>
-                  <Text style={estilos.dataAvaliacao}>
-                    {item.data} {item.statusHidratacao && `- ${item.statusHidratacao}`}
-                  </Text>
-                  <Text style={estilos.pesoAvaliacao}>
-                    Taxa: {item.sweatRate ? `${item.sweatRate} L/h` : 'Nao calculada'}
-                  </Text>
-                </View>
-                
-                <TouchableOpacity
-                  style={[estilos.botaoNavegacao, { paddingVertical: 8, paddingHorizontal: 16, marginBottom: 0 }]}
-                  onPress={() => navigation.navigate('Avaliacao', { id: item.id })}
-                >
-                  <Text style={estilos.textoBotaoNavegacao}>Ver</Text>
-                </TouchableOpacity>
-              </View>
-            ))
-          )}
-        </View>
+        )}
       </View>
     </ScrollView>
   );
 };
 
 export default TelaPrincipal;
-
-
