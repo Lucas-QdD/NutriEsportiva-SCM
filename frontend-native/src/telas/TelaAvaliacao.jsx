@@ -1,3 +1,4 @@
+import Vlibras from '../components/Vlibras';
 import React, { useState, useEffect } from 'react';
 import {
   StyleSheet,
@@ -44,7 +45,7 @@ const TelaAvaliacao = ({ route }) => {
   const [mensagem, setMensagem] = useState('');
   const [mostrarModal, setMostrarModal] = useState(false);
   const [modoEdicao, setModoEdicao] = useState(false); 
-  const [modoVisualizacaoOnly, setModoVisualizacaoOnly] = useState(false); // Controla se o modal abre apenas para leitura
+  const [modoVisualizacaoOnly, setModoVisualizacaoOnly] = useState(false);
 
   const ehAtleta = usuario?.role === 'ATHLETE';
   const nomeAtletaSelecionado = route.params?.atletaNome || route.params?.atleta?.nome || "";
@@ -54,7 +55,6 @@ const TelaAvaliacao = ({ route }) => {
     (av) => av.nutricionistaResponsavel === nomeDoUsuario || (ehAtleta && av.atletaNome === nomeDoUsuario)
   );
 
-  // Realiza os cálculos em tempo real quando os inputs mudarem
   useEffect(() => {
     const pre = parseFloat(dadosFormulario.preWeightKg);
     const pos = parseFloat(dadosFormulario.postWeightKg);
@@ -72,7 +72,7 @@ const TelaAvaliacao = ({ route }) => {
 
       if (perdaPercent >= 2) {
         status = 'Desidratado';
-        rec = 'Atenção: Perda drástica de fluido detectada. Aumentar o consumo de água/isotônicos durante a sessão.';
+        rec = 'Atenção Perda drástica de fluido detectada. Aumentar o consumo de água/isotônicos durante a sessão.';
       } else if (perdaPercent < 0) {
         status = 'Hiperidratado';
         rec = 'Reduzir o consumo excessivo de água livre para evitar riscos de hiponatremia.';
@@ -228,7 +228,6 @@ const TelaAvaliacao = ({ route }) => {
     dataAvaliacao: { fontSize: 14, color: cores.textoSecundario, marginBottom: 2 },
     pesoAvaliacao: { fontSize: 14, color: cores.textoSecundario, fontWeight: '500' },
     
-    // Alinhamento horizontal idêntico à TelaAtletas
     acoesCard: { flexDirection: 'row', justifyContent: 'flex-end', gap: 8, borderTopWidth: 1, borderTopColor: cores.bordaCartao, paddingTop: 10 },
     botaoAcaoCard: { paddingVertical: 8, paddingHorizontal: 14, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
     botaoCardVer: { backgroundColor: cores.verdeSucesso },
@@ -299,8 +298,8 @@ const TelaAvaliacao = ({ route }) => {
                     >
                       {item.statusHidratacao} ({item.perdaPesoPercent}%)
                     </Text>
-                    <Text style={estilos.dataAvaliacao}>Data: {item.data} · Atleta: {item.atletaNome}</Text>
-                    <Text style={estilos.pesoAvaliacao}>Taxa de Suor: {item.sweatRate} L/h</Text>
+                    <Text style={estilos.dataAvaliacao}>Data {item.data} · Atleta {item.atletaNome}</Text>
+                    <Text style={estilos.pesoAvaliacao}>Taxa de Suor {item.sweatRate} L/h</Text>
                   </View>
                   
                   <View style={estilos.acoesCard}>
@@ -354,11 +353,17 @@ const TelaAvaliacao = ({ route }) => {
             )}
             
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 20 }}>
+              
+              <Vlibras 
+                tituloBotao="Ajuda com a Pesagem em LIBRAS" 
+                texto="Por favor, insira sua massa corporal exata e dados de hidratação para o cálculo de sudorese" 
+              />
+
               <Text style={estilos.rotulo}>Data *</Text>
               <TextInput value={dadosFormulario.data} editable={inputsLiberados} onChangeText={(texto) => setDadosFormulario({ ...dadosFormulario, data: texto })} style={estilos.entradaFormulario} />
 
               <Text style={estilos.rotulo}>Duração do Treino (Minutos) *</Text>
-              <TextInput keyboardType="numeric" value={String(dadosFormulario.durationMin || '')} editable={inputsLiberados} onChangeText={(texto) => setDadosFormulario({ ...dadosFormulario, durationMin: texto })} style={estilos.entradaFormulario} placeholder="Ex: 60" placeholderTextColor={cores.textoSecundario} />
+              <TextInput keyboardType="numeric" value={String(dadosFormulario.durationMin || '')} editable={inputsLiberados} onChangeText={(texto) => setDadosFormulario({ ...dadosFormulario, durationMin: texto })} style={estilos.entradaFormulario} placeholder="Ex 60" placeholderTextColor={cores.textoSecundario} />
 
               <View style={{flexDirection: 'row', justifyContent:'space-between'}}>
                 <View style={{width: '48%'}}>
@@ -384,10 +389,10 @@ const TelaAvaliacao = ({ route }) => {
 
               <View style={estilos.caixaCalculo}>
                 <Text style={estilos.tituloCalculo}>📊 Resultados Calculados</Text>
-                <Text style={estilos.textoCalculo}>Taxa de Sudorese: <Text style={{fontWeight: 'bold'}}>{resultadoCalculado.sweatRate} Litros/hora</Text></Text>
-                <Text style={estilos.textoCalculo}>Perda de Peso Corpóreo: {resultadoCalculado.perdaPesoPercent}%</Text>
-                <Text style={estilos.textoCalculo}>Estado Clínico: {resultadoCalculado.statusHidratacao}</Text>
-                {resultadoCalculado.recomendacao ? <Text style={[estilos.textoCalculo, {marginTop: 6, fontStyle: 'italic', fontSize: 13}]}>Obs: {resultadoCalculado.recomendacao}</Text> : null}
+                <Text style={estilos.textoCalculo}>Taxa de Sudorese <Text style={{fontWeight: 'bold'}}>{resultadoCalculado.sweatRate} Litros/hora</Text></Text>
+                <Text style={estilos.textoCalculo}>Perda de Peso Corpóreo {resultadoCalculado.perdaPesoPercent}%</Text>
+                <Text style={estilos.textoCalculo}>Estado Clínico {resultadoCalculado.statusHidratacao}</Text>
+                {resultadoCalculado.recomendacao ? <Text style={[estilos.textoCalculo, {marginTop: 6, fontStyle: 'italic', fontSize: 13}]}>Obs {resultadoCalculado.recomendacao}</Text> : null}
               </View>
 
               <Text style={estilos.rotulo}>Sudoração Percebida</Text>
@@ -400,7 +405,7 @@ const TelaAvaliacao = ({ route }) => {
               </View>
 
               <Text style={estilos.rotulo}>Sintomas Percebidos</Text>
-              <TextInput value={dadosFormulario.sintomas} editable={inputsLiberados} onChangeText={(texto) => setDadosFormulario({ ...dadosFormulario, sintomas: texto })} placeholder="Ex: Cãibras, sede excessiva" placeholderTextColor={cores.textoSecundario} style={estilos.areaTexto} multiline />
+              <TextInput value={dadosFormulario.sintomas} editable={inputsLiberados} onChangeText={(texto) => setDadosFormulario({ ...dadosFormulario, sintomas: texto })} placeholder="Ex Cãibras, sede excessiva" placeholderTextColor={cores.textoSecundario} style={estilos.areaTexto} multiline />
 
               {erro ? <View style={estilos.caixaErro}><Text style={estilos.textoErro}>{erro}</Text></View> : null}
 

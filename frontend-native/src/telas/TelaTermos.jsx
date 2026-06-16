@@ -6,6 +6,7 @@ import {
   Text,
 } from 'react-native';
 import { usarTema } from '../contextos/ContextoTema';
+import Vlibras from '../components/Vlibras';
 
 const TelaTermos = () => {
   const { temaTemaEscuro } = usarTema();
@@ -74,13 +75,20 @@ const TelaTermos = () => {
 
   return (
     <ScrollView style={estilos.conteiner}>
-      {/* Cabeçalho Padronizado */}
+      {/* cabeçalho padronizado */}
       <View style={estilos.cabecalho}>
         <Text style={estilos.tituloCabecalho}>Termos de Uso</Text>
       </View>
 
       <View style={estilos.conteudo}>
-        {/* Seção 1 */}
+        
+        {/* componente do vlibras inserido no topo da tela */}
+        <Vlibras 
+          tituloBotao="Traduzir Termos em LIBRAS" 
+          texto="Estes são os termos de uso e privacidade do sistema NutriEsportiva. Os seus dados de saúde e performance são tratados com total confidencialidade e privacidade." 
+        />
+
+        {/* seção 1 */}
         <View style={estilos.secao}>
           <Text style={estilos.titulosecao}>1. Aceitação</Text>
           <Text style={estilos.conteudosecao}>
@@ -88,7 +96,7 @@ const TelaTermos = () => {
           </Text>
         </View>
 
-        {/* Seção 2 */}
+        {/* seção 2 */}
         <View style={estilos.secao}>
           <Text style={estilos.titulosecao}>2. Privacidade</Text>
           <Text style={estilos.conteudosecao}>
@@ -102,7 +110,7 @@ const TelaTermos = () => {
           </Text>
         </View>
 
-        {/* Seção 3 */}
+        {/* seção 3 */}
         <View style={estilos.secao}>
           <Text style={estilos.titulosecao}>3. Responsabilidade</Text>
           <Text style={estilos.conteudosecao}>
@@ -110,7 +118,7 @@ const TelaTermos = () => {
           </Text>
         </View>
 
-        {/* Seção 4 */}
+        {/* seção 4 */}
         <View style={estilos.secao}>
           <Text style={estilos.titulosecao}>4. Dados e Registros</Text>
           <Text style={estilos.conteudosecao}>
@@ -118,7 +126,7 @@ const TelaTermos = () => {
           </Text>
         </View>
 
-        {/* Seção 5 */}
+        {/* seção 5 */}
         <View style={estilos.secao}>
           <Text style={estilos.titulosecao}>5. Modificações</Text>
           <Text style={estilos.conteudosecao}>
@@ -126,7 +134,7 @@ const TelaTermos = () => {
           </Text>
         </View>
 
-        {/* Seção 6 */}
+        {/* seção 6 */}
         <View style={estilos.secao}>
           <Text style={estilos.titulosecao}>6. Conformidade</Text>
           <Text style={estilos.conteudosecao}>
