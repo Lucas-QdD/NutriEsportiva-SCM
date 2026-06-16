@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Em celular fisico via Expo, troque localhost pelo IP da maquina na mesma rede.
-export const API_BASE_URL = 'http://192.168.100.106:3333';
+export const API_BASE_URL = 'http://localhost:3333';
 const DEBUG_API = false;
 
 export async function getStoredToken() {
